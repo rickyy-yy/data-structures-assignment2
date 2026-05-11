@@ -44,6 +44,15 @@ namespace Task1 {
             count = 0;
         }
 
+        ~UnlimitedQueue() {
+            Order* curr = front;
+            while (curr != nullptr) {
+                Order* temp = curr->next;
+                delete curr;
+                curr = temp;
+            }
+        }
+
         bool isEmpty() { return count == 0; }
 
         void enqueue(Order* order) {
@@ -86,7 +95,7 @@ namespace Task1 {
 
             cout << endl;
             cout << string(40, '=') << endl;
-            cout << "Pending Orders:" << endl;
+            cout << "Orders in This Queue:" << endl;
             cout << string(40, '=') << endl;
             cout << endl;
 
@@ -130,12 +139,6 @@ namespace Task1 {
             }
         }
 
-        int getLastID() {
-            if (isEmpty()) {
-                return 0;
-            }
-            return rear->orderID;
-        }
     };
 
     struct ProcessingQueue {
@@ -144,6 +147,19 @@ namespace Task1 {
         int capacity;
 
         ProcessingQueue(int cap) : rear(nullptr), count(0), capacity(cap) {}
+
+        ~ProcessingQueue() {
+            if (rear == nullptr) {
+                return;
+            }
+            Order* curr = rear->next;
+            rear->next = nullptr;
+            while (curr != nullptr) {
+                Order* temp = curr->next;
+                delete curr;
+                curr = temp;
+            }
+        }
 
         bool isEmpty() { return count == 0; }
         bool isFull()  { return count == capacity; }
@@ -197,7 +213,7 @@ namespace Task1 {
 
             cout << endl;
             cout << string(40, '=') << endl;
-            cout << "Processing Orders:" << endl;
+            cout << "Orders in This Queue:" << endl;
             cout << string(40, '=') << endl;
             cout << endl;
 
@@ -241,12 +257,6 @@ namespace Task1 {
             }
         }
 
-        int getLastID() {
-            if (isEmpty()) {
-                return 0;
-            }
-            return rear->orderID;
-        }
     };
 
     void runTask1();

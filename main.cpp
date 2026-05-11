@@ -4,6 +4,7 @@
 #include "Task3.hpp"
 #include "Task4.hpp"
 #include "Task5.hpp"
+#include <limits>
 
 using namespace std;
 using namespace Task1;
@@ -27,7 +28,17 @@ int main() {
         cout << "Enter your choice: ";
         cin >> choice;
 
-        switch (choice) {
+        if(cin.fail()) {
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+            cout << endl;
+            cout << string(40, '=') << endl;
+            cout << "! Invalid input. Please enter a number between 1 and 6." << endl;
+            cout << string(40, '=') << endl;
+            cout << endl;
+        }
+        else {
+            switch (choice) {
             case 1: 
                 runTask1(); 
                 break;
@@ -46,10 +57,15 @@ int main() {
             case 6: 
                 cout << "See you next time!" << endl; 
                 break;
-            default: 
-                cout << "Invalid choice. Please try again." << endl; 
-                break;
+            default:
+                cout << endl;
+                cout << string(40, '=') << endl;
+                cout << "! Invalid choice. Please enter a number between 1 and 6." << endl;
+                cout << string(40, '=') << endl;
+                cout << endl;
+            }
         }
+        
     } while (choice != 6);
 
     return 0;

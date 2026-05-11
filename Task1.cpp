@@ -1,36 +1,40 @@
 #include "Task1.hpp"
 #include <iostream>
+#include <limits>
 
 using namespace std;
 using namespace Task1;
 
 namespace Task1 {
-    Order* createOrder(UnlimitedQueue& pendingQueue, ProcessingQueue& processingQueue, UnlimitedQueue& completedQueue){
+    Order* createOrder(int& nextOrderID){
         Order* newOrder = new Order();
-        
-        if (!pendingQueue.isEmpty()) {
-            newOrder->orderID = pendingQueue.getLastID() + 1;
-        } else if (!processingQueue.isEmpty()) {
-            newOrder->orderID = processingQueue.getLastID() + 1;
-        } else if (!completedQueue.isEmpty()) {
-            newOrder->orderID = completedQueue.getLastID() + 1;
-        } else {
-            newOrder->orderID = 1;
-        }
+        newOrder->orderID = nextOrderID++;
 
         cout << endl;
         cout << string(40, '=') << endl;
         cout << "Recording New Order" << endl;
         cout << string(40, '=') << endl;
-        
+
         cout << "Order ID: " << newOrder->orderID << endl;
+
         cout << "Enter Item ID: ";
-        cin >> newOrder->itemID;
+        while (!(cin >> newOrder->itemID)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Enter Item ID: ";
+        }
+
         cout << "Enter Shelf Number: ";
-        cin >> newOrder->shelfNumber;
-        cout << "Enter Packing Station (A/B/C): ";
+        while (!(cin >> newOrder->shelfNumber)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Enter Shelf Number: ";
+        }
+
+        cout << "Enter Packing Station: ";
         cin >> newOrder->packingStation;
-        cout << "Enter Zone (X/Y/Z): ";
+
+        cout << "Enter Zone: ";
         cin >> newOrder->zone;
 
         return newOrder;
@@ -41,10 +45,9 @@ namespace Task1 {
         ProcessingQueue processingQueue(5); // Assuming we have 5 robots available
         UnlimitedQueue completedQueue;
         int nextRobotID = 1;
+        int nextOrderID = 1;
 
-        
-
-        int choice;
+        int choice = 0;
         do {
             cout << endl;
             cout << string(40, '=') << endl;
@@ -62,9 +65,18 @@ namespace Task1 {
             cout << "Enter your choice (1-6): ";
             cin >> choice;
 
-            switch(choice){
+            if(cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+            cout << endl;
+            cout << string(40, '=') << endl;
+            cout << "! Invalid input. Please enter a number between 1 and 6." << endl;
+            cout << string(40, '=') << endl;
+            }
+            else {
+                switch(choice){
                 case 1:
-                    pendingQueue.enqueue(createOrder(pendingQueue, processingQueue, completedQueue));
+                    pendingQueue.enqueue(createOrder(nextOrderID));
                     cout << endl;
                     cout << string(40, '=') << endl;
                     cout << "! Order added to queue." << endl;
@@ -107,7 +119,8 @@ namespace Task1 {
                     break;
                 default:
                     cout << "Invalid choice. Please try again." << endl;
-            }
+                }
+            }  
         } while (choice != 6);
     }
 }
