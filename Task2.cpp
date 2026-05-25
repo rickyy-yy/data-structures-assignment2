@@ -54,21 +54,18 @@ void runTask2() {
 
         //Record a new order
         case 1: {   
-            //Create new order dynamically
-            Order* o   = new Order(nextOrderID, 0, -1, 0, ' ', ' ');
-            
-            //Assign unique order id
-            o->orderID = nextOrderID++;
+            int itemID, shelfNumber;
+            char packingStation, zone;
 
             cout << endl;
             cout << string(40, '=') << endl;
             cout << "Recording New Order" << endl;
             cout << string(40, '=') << endl;
-            cout << "Order ID: " << o->orderID << endl;
+            cout << "Order ID: " << nextOrderID << endl;
 
             //Input item id
             cout << "Enter Item ID: ";
-            while (!(cin >> o->itemID)) {
+            while (!(cin >> itemID)) {
                 cin.clear(); 
                 cin.ignore(1000000, '\n');
                 cout << "[ERROR] Invalid input. Please enter a valid Item ID: ";
@@ -76,7 +73,7 @@ void runTask2() {
             
             //Input shelf number
             cout << "Enter Shelf Number: ";
-            while (!(cin >> o->shelfNumber)) {
+            while (!(cin >> shelfNumber)) {
                 cin.clear(); 
                 cin.ignore(1000000, '\n');
                 cout << "[ERROR] Invalid input. Please enter a valid Shelf Number: ";
@@ -84,11 +81,14 @@ void runTask2() {
             
             //Input packing station
             cout << "Enter Packing Station: "; 
-            cin >> o->packingStation;
+            cin >> packingStation;
             
             //Input zone
             cout << "Enter Zone: ";            
-            cin >> o->zone;
+            cin >> zone;
+
+            // Construct with ALL correct values at once
+            Order* o = new Order(nextOrderID++, itemID, -1, shelfNumber, packingStation, zone);
 
             //Add order into pending queue
             pendingQueue.enqueue(o);
