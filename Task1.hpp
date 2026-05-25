@@ -93,6 +93,9 @@ public:
         Order* temp = front;
         front = front->next;
         size--;
+
+        if(front == nullptr)   
+        rear = nullptr; 
         return temp;
     }
 
@@ -134,7 +137,7 @@ public:
                  << "| "
                  << setw(8)  << current->zone
                  << "| "
-                 << setw(10) << current->robotID
+                 << setw(10) << (current->robotID == -1 ? "None" : to_string(current->robotID))
                  << "| "
                  << setw(15) << current->status
                  << endl;
@@ -155,7 +158,7 @@ public:
     ProcessingQueue(int maxSize){
         capacity = maxSize;
         queue = new Order*[capacity];
-        front = -1;
+        front = 0;
         rear = -1;
         size = 0;
     }
@@ -188,9 +191,12 @@ public:
             cout << HEADER << endl;
             return nullptr;
         }
+        
+        Order* o = queue[front];
         front = (front + 1) % capacity;
         size--;
-        return queue[front];
+
+        return o;
     }
 
     void display(){
@@ -218,23 +224,23 @@ public:
              << setw(15) << "Status"
              << endl;
         cout << HEADER << endl;
-        int temp = front;
+        
         for(int i = 0; i < size; i++){
-            temp = (temp + 1) % capacity;
+            int index = (front + i) % capacity;
             cout << left
-                 << setw(10) << queue[temp]->orderID
+                 << setw(10) << queue[index]->orderID
                  << "| "
-                 << setw(10) << queue[temp]->itemID
+                 << setw(10) << queue[index]->itemID
                  << "| "
-                 << setw(10) << queue[temp]->shelfNumber
+                 << setw(10) << queue[index]->shelfNumber
                  << "| "
-                 << setw(12) << queue[temp]->packingStation
+                 << setw(12) << queue[index]->packingStation
                  << "| "
-                 << setw(8)  << queue[temp]->zone
+                 << setw(8)  << queue[index]->zone
                  << "| "
-                 << setw(10) << queue[temp]->robotID
+                 << setw(10) << queue[index]->robotID
                  << "| "
-                 << setw(15) << queue[temp]->status
+                 << setw(15) << queue[index]->status
                  << endl;
         }
     }
@@ -341,7 +347,7 @@ public:
                  << "| "
                  << setw(8)  << current->zone
                  << "| "
-                 << setw(10) << current->robotID
+                 << setw(10) << (current->robotID == -1 ? "None" : to_string(current->robotID))
                  << "| "
                  << setw(15) << current->status
                  << endl;
