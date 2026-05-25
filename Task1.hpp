@@ -59,6 +59,8 @@ public:
     }
 
     void enqueue(Order* order){
+        order->next = nullptr;
+
         if(rear == nullptr){
             front = order;
             rear = order;
@@ -275,6 +277,8 @@ public:
     }
 
     void enqueue(Order* order){
+        order->next = nullptr;
+        
         if(rear == nullptr){
             front = order;
             rear = order;
