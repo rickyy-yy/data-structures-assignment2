@@ -5,7 +5,6 @@
 #include <iomanip>
 
 using namespace std;
-using namespace Task1;
 
 //Stores information about a delivery robot
 struct Robot{
@@ -170,8 +169,8 @@ struct RobotAssignmentSystem {
                 robots[index].totalTaskDone++;
 
                 //Update order status
-                order->assignRobot(robots[index].robotID);
-                order->inProcess();
+                order->robotID = robots[index].robotID;
+                order->status = "Processing";
 
                 cout << endl;
                 cout << string(40, '=') << endl;
