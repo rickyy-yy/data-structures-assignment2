@@ -1,263 +1,348 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <iomanip>
-#include <iostream>
+
 using namespace std;
 
-namespace Task1 {
+const string HEADER = string(80, '=');
+int nextOrderID = 1;
 
-    struct Order{
-        int orderID;
-        int itemID;
-        int robotID;
-        int shelfNumber;
-        char packingStation;
-        char zone;
-        string status;
-        Order* next;
+struct Order{
+    int orderID;
+    int itemID;
+    int robotID;
+    int shelfNumber;
+    char packingStation;
+    char zone;
+    string status;
+    Order* next;
 
-        Order(){
-            status = "Pending";
-            next = nullptr;
-            robotID = -1;
-        };
+    Order(int thisOrderID, int thisItemID, int thisRobotID, int thisShelfNumber, char thisPackingStation, char thisZone){
+        orderID = thisOrderID;
+        itemID = thisItemID;
+        robotID = thisRobotID;
+        shelfNumber = thisShelfNumber;
+        packingStation = thisPackingStation;
+        zone = thisZone;
+        status = "Pending";
+        next = nullptr;
+    }
+};
 
-        void inProcess(){
-            status = "Processing";
-        };
-        void completed(){
-            status = "Completed";
+class WaitingQueue{
+    Order* front;
+    Order* rear;
+    int size;
+
+public:
+    WaitingQueue(){
+        front = nullptr;
+        rear = nullptr;
+        size = 0;
+    }
+
+    ~WaitingQueue(){
+        Order* current = front;
+        while(current != nullptr){
+            Order* temp = current->next;
+            delete current;
+            current = temp;
         }
-        void assignRobot(int assignedRobotID){
-            robotID = assignedRobotID;
+    }
+
+    bool isEmpty(){
+        if(size == 0){
+            return true;
         }
-    };
+        return false;
+    }
 
-    struct UnlimitedQueue {
-        Order* front;
-        Order* rear;
-        int count;
+    void enqueue(Order* order){
+        if(rear == nullptr){
+            front = order;
+            rear = order;
+            size++;
 
-        UnlimitedQueue(){
-            front = rear = nullptr;
-            count = 0;
+            cout << HEADER << endl;
+            cout << "Order #" << order->orderID << " is now waiting to be processed." << endl;
+            cout << HEADER << endl;
+
+            return;
         }
+        rear->next = order;
+        rear = order;
+        size++;
 
-        ~UnlimitedQueue() {
-            Order* curr = front;
-            while (curr != nullptr) {
-                Order* temp = curr->next;
-                delete curr;
-                curr = temp;
-            }
+        cout << endl << HEADER << endl;
+        cout << "Order #" << order->orderID << " is now waiting to be processed." << endl;
+        cout << HEADER << endl;
+
+        return;
+    }
+
+    Order* dequeue(){
+        if(isEmpty()){
+            cout << HEADER << endl;
+            cout << "Queue empty!" << endl;
+            cout << HEADER << endl;
+            return nullptr;
         }
+        Order* temp = front;
+        front = front->next;
+        size--;
+        return temp;
+    }
 
-        bool isEmpty() { return count == 0; }
-
-        void enqueue(Order* order) {
-            order->next = nullptr;
-            if (isEmpty()) {
-                front = rear = order;
-            } else {
-                rear->next = order;
-                rear = order;
-            }
-            count++;
+    void display(){
+        if(isEmpty()){
+            cout << HEADER << endl;
+            cout << "Queue empty!" << endl;
+            cout << HEADER << endl;
+            return;
         }
+        Order* current = front;
 
-        Order* dequeue() {
-            if (isEmpty()) {
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "! Queue is empty." << endl;
-                cout << string(40, '=') << endl;
-
-                return nullptr;
-            }
-
-            Order* temp = front;
-            front = front->next;
-            if (front == nullptr) rear = nullptr;
-            temp->next = nullptr;
-            count--;
-            return temp;
-        }
-
-        void displayAll() {
-            if (isEmpty()) {
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "! No orders to display." << endl;
-                cout << string(40, '=') << endl;
-                return;
-            }
-
-            cout << endl;
-            cout << string(40, '=') << endl;
-            cout << "Orders in This Queue:" << endl;
-            cout << string(40, '=') << endl;
-            cout << endl;
-
-            Order* curr = front;
-
+        cout << HEADER << endl;
+        cout << left
+             << setw(10) << "Order ID"
+             << "| " 
+             << setw(10) << "Item ID"
+             << "| "
+             << setw(10) << "Shelf"
+             << "| "
+             << setw(12) << "Station"
+             << "| "
+             << setw(8)  << "Zone"
+             << "| "
+             << setw(10) << "Robot ID"
+             << "| "
+             << setw(15) << "Status"
+             << endl;
+        cout << HEADER << endl;
+        while(current != nullptr){
             cout << left
-                 << setw(10) << "Order ID"
-                 << "| " 
-                 << setw(10) << "Item ID"
+                 << setw(10) << current->orderID
                  << "| "
-                 << setw(10) << "Shelf"
+                 << setw(10) << current->itemID
                  << "| "
-                 << setw(12) << "Station"
+                 << setw(10) << current->shelfNumber
                  << "| "
-                 << setw(8)  << "Zone"
+                 << setw(12) << current->packingStation
                  << "| "
-                 << setw(10) << "Robot ID"
+                 << setw(8)  << current->zone
                  << "| "
-                 << setw(15) << "Status"
+                 << setw(10) << current->robotID
+                 << "| "
+                 << setw(15) << current->status
                  << endl;
+            current = current->next;
+        }
+    }
+};
 
-            cout << string(79, '-') << endl;
-            while (curr != nullptr) {
-                cout << left
-                     << setw(10) << curr->orderID
-                     << "| "
-                     << setw(10) << curr->itemID
-                     << "| "
-                     << setw(10) << curr->shelfNumber
-                     << "| "
-                     << setw(12) << curr->packingStation
-                     << "| "
-                     << setw(8)  << curr->zone
-                     << "| "
-                     << setw(10) << curr->robotID
-                     << "| "
-                     << setw(15) << curr->status
-                     << endl;
+class ProcessingQueue{
+    Order** queue;
+    int front;
+    int rear;
+    int capacity;
+    int size;
+    
 
-                curr = curr->next;
-            }
+public:
+    ProcessingQueue(int maxSize){
+        capacity = maxSize;
+        queue = new Order*[capacity];
+        front = -1;
+        rear = -1;
+        size = 0;
+    }
+
+    ~ProcessingQueue(){
+        delete[] queue;
+    }
+
+    void enqueue(Order* order){
+        if(size >= capacity){
+            cout << "Queue full!" << endl;
+            return;
+        }
+        rear = (rear + 1) % capacity;
+        queue[rear] = order;
+        size++;
+        order->status = "Processing";
+
+        cout << HEADER << endl;
+        cout << "Order #" << order->orderID << " is now processing." << endl;
+        cout << HEADER << endl;
+
+        return;
+    }
+
+    Order* dequeue(){
+        if(isEmpty()){
+            cout << HEADER << endl;
+            cout << "Queue empty!" << endl;
+            cout << HEADER << endl;
+            return nullptr;
+        }
+        front = (front + 1) % capacity;
+        size--;
+        return queue[front];
+    }
+
+    void display(){
+        if(isEmpty()){
+            cout << HEADER << endl;
+            cout << "Queue empty!" << endl;
+            cout << HEADER << endl;
+            return;
         }
 
-    };
-
-    struct ProcessingQueue {
-        Order* rear;
-        int count;
-        int capacity;
-
-        ProcessingQueue(int cap) : rear(nullptr), count(0), capacity(cap) {}
-
-        ~ProcessingQueue() {
-            if (rear == nullptr) {
-                return;
-            }
-            Order* curr = rear->next;
-            rear->next = nullptr;
-            while (curr != nullptr) {
-                Order* temp = curr->next;
-                delete curr;
-                curr = temp;
-            }
-        }
-
-        bool isEmpty() { return count == 0; }
-        bool isFull()  { return count == capacity; }
-
-        void enqueue(Order* order) {
-            if (isFull()) {
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "! Processing queue is full. No robots available." << endl;
-                cout << string(40, '=') << endl;
-                return;
-            }
-            if (isEmpty()) {
-                rear = order;
-                rear->next = rear;
-            } else {
-                order->next = rear->next;
-                rear->next = order;
-                rear = order;
-            }
-            count++;
-        }
-
-        Order* dequeue() {
-            if (isEmpty()) {
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "! Processing queue is empty." << endl;
-                cout << string(40, '=') << endl;
-                return nullptr;
-            }
-            Order* front = rear->next;
-            if (count == 1) {
-                rear = nullptr;
-            } else {
-                rear->next = front->next;
-            }
-            front->next = nullptr;
-            count--;
-            return front;
-        }
-
-        void displayAll() {
-            if (isEmpty()) {
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "! No orders in processing." << endl;
-                cout << string(40, '=') << endl;
-                return;
-            }
-
-            cout << endl;
-            cout << string(40, '=') << endl;
-            cout << "Orders in This Queue:" << endl;
-            cout << string(40, '=') << endl;
-            cout << endl;
-
+        cout << HEADER << endl;
+        cout << left
+             << setw(10) << "Order ID"
+             << "| " 
+             << setw(10) << "Item ID"
+             << "| "
+             << setw(10) << "Shelf"
+             << "| "
+             << setw(12) << "Station"
+             << "| "
+             << setw(8)  << "Zone"
+             << "| "
+             << setw(10) << "Robot ID"
+             << "| "
+             << setw(15) << "Status"
+             << endl;
+        cout << HEADER << endl;
+        int temp = front;
+        for(int i = 0; i < size; i++){
+            temp = (temp + 1) % capacity;
             cout << left
-                 << setw(10) << "Order ID"
-                 << "| " 
-                 << setw(10) << "Item ID"
+                 << setw(10) << queue[temp]->orderID
                  << "| "
-                 << setw(10) << "Shelf"
+                 << setw(10) << queue[temp]->itemID
                  << "| "
-                 << setw(12) << "Station"
+                 << setw(10) << queue[temp]->shelfNumber
                  << "| "
-                 << setw(8)  << "Zone"
+                 << setw(12) << queue[temp]->packingStation
                  << "| "
-                 << setw(10) << "Robot ID"
+                 << setw(8)  << queue[temp]->zone
                  << "| "
-                 << setw(15) << "Status"
+                 << setw(10) << queue[temp]->robotID
+                 << "| "
+                 << setw(15) << queue[temp]->status
                  << endl;
-
-            Order* curr = rear->next;
-
-            cout << string(79, '-') << endl;
-
-            for (int i = 0; i < count; i++) {
-                cout << left
-                     << setw(10) << curr->orderID
-                     << "| "
-                     << setw(10) << curr->itemID
-                     << "| "
-                     << setw(10) << curr->shelfNumber
-                     << "| "
-                     << setw(12) << curr->packingStation
-                     << "| "
-                     << setw(8)  << curr->zone
-                     << "| "
-                     << setw(10) << curr->robotID
-                     << "| "
-                     << setw(15) << curr->status
-                     << endl;
-                curr = curr->next;
-            }
         }
+    }
 
-    };
+    bool isEmpty(){
+        return size == 0;
+    }
 
-    void runTask1();
-}
+    bool isFull(){
+        return size == capacity;
+    }
+};
+
+class CompletedQueue{
+    Order* front;
+    Order* rear;
+    int size;
+
+public:
+    CompletedQueue(){
+        front = nullptr;
+        rear = nullptr;
+        size = 0;
+    }
+
+    ~CompletedQueue(){
+        Order* current = front;
+        while(current != nullptr){
+            Order* temp = current->next;
+            delete current;
+            current = temp;
+        }
+    }
+
+    bool isEmpty(){
+        if(size == 0){
+            return true;
+        }
+        return false;
+    }
+
+    void enqueue(Order* order){
+        if(rear == nullptr){
+            front = order;
+            rear = order;
+            size++;
+
+            order->status = "Completed";
+            cout << HEADER << endl;
+            cout << "Order #" << order->orderID << " has been processed." << endl;
+            cout << HEADER << endl;
+
+            return;
+        }
+        rear->next = order;
+        rear = order;
+        size++;
+
+        order->status = "Completed";
+        cout << HEADER << endl;
+        cout << "Order #" << order->orderID << " has been processed." << endl;
+        cout << HEADER << endl;
+        
+        return;
+    }
+
+    void display(){
+        if(isEmpty()){
+            cout << HEADER << endl;
+            cout << "Queue empty!" << endl;
+            cout << HEADER << endl;
+            return;
+        }
+        Order* current = front;
+
+        cout << HEADER << endl;
+        cout << left
+             << setw(10) << "Order ID"
+             << "| " 
+             << setw(10) << "Item ID"
+             << "| "
+             << setw(10) << "Shelf"
+             << "| "
+             << setw(12) << "Station"
+             << "| "
+             << setw(8)  << "Zone"
+             << "| "
+             << setw(10) << "Robot ID"
+             << "| "
+             << setw(15) << "Status"
+             << endl;
+        cout << HEADER << endl;
+        while(current != nullptr){
+            cout << left
+                 << setw(10) << current->orderID
+                 << "| "
+                 << setw(10) << current->itemID
+                 << "| "
+                 << setw(10) << current->shelfNumber
+                 << "| "
+                 << setw(12) << current->packingStation
+                 << "| "
+                 << setw(8)  << current->zone
+                 << "| "
+                 << setw(10) << current->robotID
+                 << "| "
+                 << setw(15) << current->status
+                 << endl;
+            current = current->next;
+        }
+    }
+};
