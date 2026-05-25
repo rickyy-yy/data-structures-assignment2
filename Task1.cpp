@@ -1,5 +1,7 @@
 #include "Task1.hpp"
 
+int nextOrderID = 1;
+
 Order* createOrder(){
     int thisItemID, thisRobotID, thisShelfNumber;
     char thisPackingStation, thisZone;
@@ -83,7 +85,7 @@ Order* createOrder(){
 
 void runTask1(){
     int choice = 0;
-    int nextOrderID = 1;
+    
     WaitingQueue waitingQueue;
     ProcessingQueue processingQueue(5);
     CompletedQueue completedQueue;

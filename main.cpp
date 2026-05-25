@@ -7,7 +7,6 @@
 #include <limits>
 
 using namespace std;
-using namespace Task1;
 
 int main() {
     int choice;
@@ -49,10 +48,10 @@ int main() {
                 runTask3(); 
                 break;
             case 4: 
-                runTask4(); 
+                Task4::runTask4(); 
                 break;
             case 5: 
-                runTask5(); 
+                Task5::runTask5(); 
                 break;
             case 6: 
                 cout << "See you next time!" << endl; 

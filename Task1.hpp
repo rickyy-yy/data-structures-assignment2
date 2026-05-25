@@ -7,7 +7,6 @@
 using namespace std;
 
 const string HEADER = string(80, '=');
-int nextOrderID = 1;
 
 struct Order{
     int orderID;
@@ -346,3 +345,6 @@ public:
         }
     }
 };
+
+Order* createOrder();
+void runTask1();
