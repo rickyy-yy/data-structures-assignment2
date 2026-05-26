@@ -20,76 +20,6 @@ struct Item{
     string itemName;
     int shelfNumber;
     char zone;
-    Item* next;
-};
-
-struct ItemList{
-    Item* head;
-    int count;
-
-    ItemList(){
-        head = nullptr;
-        count = 0;
-    }
-
-    ~ItemList(){
-        Item* current = head;
-        while(current != nullptr){
-            Item* temp = current;
-            current = current->next;
-            delete temp;
-        }
-    }
-
-    bool isEmpty(){
-        return count == 0;
-    }
-
-    void append(Item* item){
-        if(head == nullptr){
-            head = item;
-            count++;
-            return;
-        }
-        Item* current = head;
-        while(current->next != nullptr){
-            current = current->next;
-        }
-        current->next = item;
-        count++;
-    }
-
-    void display(){
-        Item* current = head;
-        if(current == nullptr){
-            cout << HEADER << endl;
-            cout << "No items loaded!" << endl;
-            cout << HEADER << endl;
-            return;
-        }
-        cout << left
-             << setw(10) << "Item ID"
-             << "| " 
-             << setw(10) << "Item Name";
-        while(current != nullptr){
-            cout << left
-                 << setw(10) << current->itemID
-                 << "| "
-                 << setw(10) << current->itemName;
-            current = current->next;
-        }
-    }
-
-    bool itemExist(int queryID){
-        Item* current = head;
-        while(current != nullptr){
-            if(current->itemID == queryID){
-                return true;
-            }
-            current = current->next;
-        }
-        return false;
-    }
 };
 
 struct ItemArray{
@@ -97,6 +27,8 @@ struct ItemArray{
     int size;
     int capacity;
     int pointer;
+
+    ItemArray() : capacity(0), size(0), array(nullptr) {}
 
     ItemArray(int maxSize){
         pointer = -1;
@@ -109,11 +41,19 @@ struct ItemArray{
         delete[] array;
     }
 
+    void init(int maxSize){
+        delete[] array;
+        capacity = maxSize;
+        size = 0;
+        pointer = -1;
+        array = new Item[maxSize];
+    }
+
     bool isEmpty(){
         return size == 0;
     }
 
-    void append(Item item){
+    void append(Item* item){
         if(size >= capacity){
             cout << HEADER << endl;
             cout << "Array is full!" << endl;
@@ -121,8 +61,9 @@ struct ItemArray{
             return;
         }
         pointer++;
-        array[pointer] = item;
+        array[pointer] = *item;
         size++;
+        recursion(array, 0, size - 1);
     }
 
     void display(){
@@ -141,8 +82,9 @@ struct ItemArray{
              << "| " 
              << setw(10) << "Shelf Number"
              << "| " 
-             << setw(10) << "Zone";
-             
+             << setw(10) << "Zone"
+             << endl;;
+
         while(tempPointer <= pointer){
             cout << left
                  << setw(10) << array[tempPointer].itemID                 
@@ -151,9 +93,75 @@ struct ItemArray{
                  << "| "
                  << setw(10) << array[tempPointer].shelfNumber
                  << "| "
-                 << setw(10) << array[tempPointer].zone;
+                 << setw(10) << array[tempPointer].zone
+                 << endl;
             tempPointer++;
         }
+    }
+
+    void recursion(Item array[], int lowerBound, int upperBound){
+        if(lowerBound < upperBound){
+            int pivot = partition(array, lowerBound, upperBound);
+            recursion(array, lowerBound, pivot - 1);
+            recursion(array, pivot + 1, upperBound);
+        }
+        else{
+            return;
+        }
+    }
+
+    int partition(Item array[], int lowerBound, int upperBound){
+        int pivot = array[upperBound].itemID;
+        int i = lowerBound;
+
+        for(int j = lowerBound; j < upperBound; j++){
+            if(array[j].itemID <= pivot){
+                swap(array[i], array[j]);
+                i++;
+            }
+        }
+        swap(array[i], array[upperBound]);
+        return i;
+    }
+
+    Item search(int queryID){
+        int lowerBound = 0;
+        int upperBound = size - 1;
+
+        while(lowerBound <= upperBound){
+            int mid = (lowerBound + upperBound) / 2;
+
+            if(array[mid].itemID == queryID){
+                return array[mid];
+            }
+            else if(array[mid].itemID < queryID){
+                lowerBound = mid + 1;
+            }
+            else{
+                upperBound = mid - 1;
+            }
+        }
+        return Item();
+    }
+
+    bool itemExist(int queryID){
+        int lowerBound = 0;
+        int upperBound = size - 1;
+
+        while(lowerBound <= upperBound){
+            int mid = (lowerBound + upperBound) / 2;
+
+            if(array[mid].itemID == queryID){
+                return true;
+            }
+            else if(array[mid].itemID < queryID){
+                lowerBound = mid + 1;
+            }
+            else{
+                upperBound = mid - 1;
+            }
+        }
+        return false;
     }
 };
 
@@ -509,5 +517,7 @@ public:
     }
 };
 
-Order* createOrder();
+int getFileLength(string filepath);
+void loadItems(ItemArray itemArray);
+Order* createOrder(ItemArray itemArray);
 void runTask1();
