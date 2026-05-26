@@ -157,10 +157,6 @@ struct ItemArray{
     }
 };
 
-struct Robot{
-
-};
-
 struct Order{
     int orderID;
     int itemID;
@@ -508,6 +504,12 @@ public:
         }
     }
 };
+
+extern int nextOrderID;
+extern ItemList itemList;
+extern WaitingQueue waitingQueue;
+extern ProcessingQueue processingQueue;
+extern CompletedQueue completedQueue;
 
 Order* createOrder();
 void runTask1();
