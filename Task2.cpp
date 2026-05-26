@@ -3,13 +3,12 @@
 #include <limits>
 
 using namespace std;
-using namespace Task1;
 
 void runTask2() {
     RobotAssignmentSystem system(5);    //Create robot assignment system with 5 robots
-    UnlimitedQueue pendingQueue;    //Queue for pending orders
+    WaitingQueue pendingQueue;    //Queue for pending orders
     ProcessingQueue processingQueue(5); //Queue for processing orders
-    UnlimitedQueue completedQueue;  //Queue for completerd orders
+    CompletedQueue completedQueue;  //Queue for completerd orders
     
     int nextOrderID = 1;    //Auto-increment order id
 
@@ -41,7 +40,7 @@ void runTask2() {
         //Input validation for menu choice
         if (cin.fail()) {
             cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cin.ignore(1000000, '\n');
             cout << endl;
             cout << string(40, '=') << endl;
             cout << "[ERROR] Invalid input. Please enter a number between 1 and 11." << endl;
@@ -55,39 +54,41 @@ void runTask2() {
 
         //Record a new order
         case 1: {   
-            //Create new order dynamically
-            Order* o   = new Order();
-            
-            //Assign unique order id
-            o->orderID = nextOrderID++;
+            int itemID, shelfNumber;
+            char packingStation, zone;
 
             cout << endl;
             cout << string(40, '=') << endl;
             cout << "Recording New Order" << endl;
             cout << string(40, '=') << endl;
-            cout << "Order ID: " << o->orderID << endl;
+            cout << "Order ID: " << nextOrderID << endl;
 
             //Input item id
             cout << "Enter Item ID: ";
-            while (!(cin >> o->itemID)) {
-                cin.clear(); cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            while (!(cin >> itemID)) {
+                cin.clear(); 
+                cin.ignore(1000000, '\n');
                 cout << "[ERROR] Invalid input. Please enter a valid Item ID: ";
             }
             
             //Input shelf number
             cout << "Enter Shelf Number: ";
-            while (!(cin >> o->shelfNumber)) {
-                cin.clear(); cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            while (!(cin >> shelfNumber)) {
+                cin.clear(); 
+                cin.ignore(1000000, '\n');
                 cout << "[ERROR] Invalid input. Please enter a valid Shelf Number: ";
             }
             
             //Input packing station
             cout << "Enter Packing Station: "; 
-            cin >> o->packingStation;
+            cin >> packingStation;
             
             //Input zone
             cout << "Enter Zone: ";            
-            cin >> o->zone;
+            cin >> zone;
+
+            // Construct with ALL correct values at once
+            Order* o = new Order(nextOrderID++, itemID, -1, shelfNumber, packingStation, zone);
 
             //Add order into pending queue
             pendingQueue.enqueue(o);
@@ -143,34 +144,33 @@ void runTask2() {
             
             //Input validation
             while (!(cin >> robotID)) {
-                cin.clear(); cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cin.clear(); 
+                cin.ignore(1000000, '\n');
                 cout << "[ERROR] Invalid input. Please enter a valid Robot ID: ";
             }
 
             bool found = false;
             
-            //Store processing queue size
-            int n = processingQueue.count;
-            
-            //Pass over processing queue
-            for (int i = 0; i < n; i++) {
-                //Remove front order temporarily
+            Order* temp[5] = {};
+            int kept = 0;
+
+            // pull out all orders, find the one matching this robot
+            while (!processingQueue.isEmpty()) {
                 Order* o = processingQueue.dequeue();
-                
-                if (!o) break;
-                
-                //Chk matchiing robot id
-                if (o->robotID == robotID && !found) {
-                    o->completed();             // mark it done
-                    completedQueue.enqueue(o);  // move to completed
+                if (o && o->robotID == robotID && !found) {
+                    o->status = "Completed";   // mark the order as done
+                    completedQueue.enqueue(o); // archive it
                     found = true;
                 } 
-                else {
-                    processingQueue.enqueue(o); // put unmatched order back
+                else if (o) {
+                    temp[kept++] = o; // not the right order, hold it
                 }
             }
             
             //Update robot status
+            for (int i = 0; i < kept; i++)
+                processingQueue.enqueue(temp[i]);
+
             if (found)
                 system.completeTask(robotID);
             else {
@@ -214,15 +214,15 @@ void runTask2() {
             break;
 
         //Display pending orders
-        case 8:  pendingQueue.displayAll();    
+        case 8:  pendingQueue.display();    
             break;
         
         //Display processing orders
-        case 9:  processingQueue.displayAll(); 
+        case 9:  processingQueue.display(); 
             break;
 
         //Display completed orders
-        case 10: completedQueue.displayAll();  
+        case 10: completedQueue.display();  
             break;
         
         //Exit program
