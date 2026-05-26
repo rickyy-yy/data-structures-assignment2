@@ -3,6 +3,10 @@
 int nextOrderID = 1;
 ItemList itemList = ItemList();
 
+WaitingQueue waitingQueue;
+ProcessingQueue processingQueue(5);
+CompletedQueue completedQueue;
+
 void loadItems(){
     ifstream itemFile(ITEMS_FILE);
 
@@ -14,6 +18,12 @@ void loadItems(){
     }
 
     string line;
+     if (itemFile.peek() == 0xEF) {
+        char bom[3];
+        itemFile.read(bom, 3);
+    }
+
+    getline(itemFile, line);
     while(getline(itemFile, line)){
         string idString;
         string zoneString;
@@ -141,10 +151,6 @@ void runTask1(){
     int choice = 0;
     
     loadItems();
-
-    WaitingQueue waitingQueue;
-    ProcessingQueue processingQueue(5);
-    CompletedQueue completedQueue;
 
     cout << HEADER << endl;
     cout << "Task 1: Order Management" << endl;
