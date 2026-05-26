@@ -12,23 +12,38 @@ void loadItems(){
         cout << HEADER << endl;
         return;
     }
-    ItemList itemList = ItemList();
+
     string line;
     while(getline(itemFile, line)){
+        string idString;
+        string zoneString;
+        string shelfNumberString;
+
         int itemID;
         string itemName;
-        string data;
+        char zone;
+        int shelfNumber;
+
         stringstream stringStream(line);
 
-        getline(stringStream, data, ',');
-        stringStream >> itemID >> itemName;
+        getline(stringStream, idString, ',');
+        getline(stringStream, itemName, ',');
+        getline(stringStream, zoneString, ',');
+        getline(stringStream, shelfNumberString, ',');
+
+        itemID = stoi(idString);
+        zone = zoneString[0];
+        shelfNumber = stoi(shelfNumberString);
 
         Item* temp = new Item();
         temp->itemID = itemID;
         temp->itemName = itemName;
+        temp->shelfNumber = shelfNumber;
+        temp->zone = zone;
 
         itemList.append(temp);
     }
+    itemFile.close();
 }
 
 Order* createOrder(){
@@ -47,7 +62,15 @@ Order* createOrder(){
             cin.ignore(1000000, '\n');
             cout << endl;
             cout << HEADER << endl;
-            cout << "! Invalid input. Please enter an existing item." << endl;
+            cout << "! Invalid input. Please enter an integer." << endl;
+            cout << HEADER << endl;
+        }
+        else if(!itemList.itemExist(thisItemID)){
+            cin.clear();
+            cin.ignore(1000000, '\n');
+            cout << endl;
+            cout << HEADER << endl;
+            cout << "! Item does not exist!." << endl;
             cout << HEADER << endl;
         }
         else{
@@ -117,6 +140,8 @@ Order* createOrder(){
 void runTask1(){
     int choice = 0;
     
+    loadItems();
+
     WaitingQueue waitingQueue;
     ProcessingQueue processingQueue(5);
     CompletedQueue completedQueue;

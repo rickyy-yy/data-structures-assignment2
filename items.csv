@@ -1,16 +1,16 @@
-﻿itemID,itemName
-1,Book
-2,Pencil
-3,Ruler
-4,Eraser
-5,Pen 
-6,Compass
-7,Calculator
-8,Laptop
-9,Charger
-10,Phone
-11,Wallet
-12,Mouse
-13,Nasi Lemak
-14,Cotton Bud
-15,Flashlight
+﻿itemID,itemName,zone,shelfNumber
+1,Book,A,1
+2,Pencil,A,2
+3,Ruler,A,3
+4,Eraser,B,4
+5,Pen ,B,5
+6,Compass,B,6
+7,Calculator,C,7
+8,Laptop,C,8
+9,Charger,C,9
+10,Phone,D,10
+11,Wallet,D,11
+12,Mouse,D,12
+13,Nasi Lemak,E,13
+14,Cotton Bud,E,14
+15,Flashlight,E,15

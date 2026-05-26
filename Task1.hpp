@@ -18,6 +18,8 @@ const string HEADER = string(80, '=');
 struct Item{
     int itemID;
     string itemName;
+    int shelfNumber;
+    char zone;
     Item* next;
 };
 
@@ -47,6 +49,7 @@ struct ItemList{
         if(head == nullptr){
             head = item;
             count++;
+            return;
         }
         Item* current = head;
         while(current->next != nullptr){
@@ -62,6 +65,7 @@ struct ItemList{
             cout << HEADER << endl;
             cout << "No items loaded!" << endl;
             cout << HEADER << endl;
+            return;
         }
         cout << left
              << setw(10) << "Item ID"
@@ -72,8 +76,89 @@ struct ItemList{
                  << setw(10) << current->itemID
                  << "| "
                  << setw(10) << current->itemName;
+            current = current->next;
         }
     }
+
+    bool itemExist(int queryID){
+        Item* current = head;
+        while(current != nullptr){
+            if(current->itemID == queryID){
+                return true;
+            }
+            current = current->next;
+        }
+        return false;
+    }
+};
+
+struct ItemArray{
+    Item* array;
+    int size;
+    int capacity;
+    int pointer;
+
+    ItemArray(int maxSize){
+        pointer = -1;
+        size = 0;
+        capacity = maxSize;
+        array = new Item[maxSize];
+    }
+
+    ~ItemArray(){
+        delete[] array;
+    }
+
+    bool isEmpty(){
+        return size == 0;
+    }
+
+    void append(Item item){
+        if(size >= capacity){
+            cout << HEADER << endl;
+            cout << "Array is full!" << endl;
+            cout << HEADER << endl;
+            return;
+        }
+        pointer++;
+        array[pointer] = item;
+        size++;
+    }
+
+    void display(){
+        if(isEmpty()){
+            cout << HEADER << endl;
+            cout << "Array is empty!" << endl;
+            cout << HEADER << endl;
+            return;
+        }
+        int tempPointer = 0;
+        
+        cout << left
+             << setw(10) << "Item ID"
+             << "| " 
+             << setw(10) << "Item Name"
+             << "| " 
+             << setw(10) << "Shelf Number"
+             << "| " 
+             << setw(10) << "Zone";
+             
+        while(tempPointer <= pointer){
+            cout << left
+                 << setw(10) << array[tempPointer].itemID                 
+                 << "| "
+                 << setw(10) << array[tempPointer].itemName
+                 << "| "
+                 << setw(10) << array[tempPointer].shelfNumber
+                 << "| "
+                 << setw(10) << array[tempPointer].zone;
+            tempPointer++;
+        }
+    }
+};
+
+struct Robot{
+
 };
 
 struct Order{
@@ -306,7 +391,7 @@ public:
                  << "| "
                  << setw(8)  << queue[index]->zone
                  << "| "
-                 << setw(10) << queue[index]->robotID
+                 << setw(10) << (queue[index]->robotID == -1 ? "None" : to_string(queue[index]->robotID))
                  << "| "
                  << setw(15) << queue[index]->status
                  << endl;

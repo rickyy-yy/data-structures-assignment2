@@ -17,11 +17,11 @@ int main() {
         cout << string(40, '=') << endl;
 
         cout << "Please select a task to run:" << endl;
-        cout << "1. Task 1" << endl;
-        cout << "2. Task 2" << endl;
-        cout << "3. Task 3" << endl;
-        cout << "4. Task 4" << endl;
-        cout << "5. Task 5" << endl;
+        cout << "1. Order Management" << endl;
+        cout << "2. Robot Management" << endl;
+        cout << "3. Robot Navigation" << endl;
+        cout << "4. Item Search" << endl;
+        cout << "5. Warehouse Layout and Management" << endl;
         cout << "6. Exit" << endl;
 
         cout << "Enter your choice: ";
