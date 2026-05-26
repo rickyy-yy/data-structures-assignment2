@@ -3,6 +3,8 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -25,11 +27,11 @@ struct Robot{
 //Circular queue used to manage robots
 struct CircularQueue{
     Robot* slots;   //dynamic array for queue storage
-    int cap, front, rear, count;
+    int cap, front, rear, count, currentTurn;
 
     //Constructor
     //Initialize circular queue with given capacity
-    CircularQueue(int cq) : cap(cq), front(0), rear(-1), count(0){
+    CircularQueue(int capacity) : cap(capacity), front(0), rear(-1), count(0){
         slots = new Robot [cap];
     }
     
@@ -92,19 +94,115 @@ struct CircularQueue{
         return r;
     }
 
+    // Skips robots that are Busy or under Maintenance.
+    // Returns the index of the assigned robot, or -1 if none available.
+    int assignNext(Order* order) {
+        for (int attempt = 0; attempt < count; attempt++) {
+            // Calculate actual slot index using circular arithmetic
+            int index = (front + currentTurn) % cap;
+ 
+            // Advance turn pointer for next call (ensures rotation continues)
+            currentTurn = (currentTurn + 1) % count;
+ 
+            if (slots[index].status == "Available") {
+                // Assign the robot to the order
+                slots[index].status          = "Busy";
+                slots[index].assignedOrderId = order->orderID;
+                slots[index].totalTaskDone++;
+ 
+                // Update the order with the assigned robot
+                order->robotID = slots[index].robotID;
+                order->status  = "Processing";
+ 
+                cout << endl;
+                cout << string(40, '=') << endl;
+                cout << "[OK] Order " << order->orderID
+                     << " assigned to Robot " << slots[index].robotID << "." << endl;
+                cout << string(40, '=') << endl;
+                return index;
+            }
+        }
+        // No available robot was found after checking all slots
+        cout << endl;
+        cout << string(40, '=') << endl;
+        cout << "[Reminder] All robots are currently busy or under maintenance." << endl;
+        cout << "           Please complete a task or restore a robot first." << endl;
+        cout << string(40, '=') << endl;
+        return -1;
+    }
+ 
+    // Mark a robot's task as completed and set it back to Available
+    bool completeTask(int robotID) {
+        for (int i = 0; i < count; i++) {
+            int index = (front + i) % cap;
+            if (slots[index].robotID == robotID) {
+                if (slots[index].status != "Busy") {
+                    cout << "\n[Reminder] Robot " << robotID << " is not currently busy.\n";
+                    return false;
+                }
+                slots[index].status          = "Available";
+                slots[index].assignedOrderId = -1;
+                cout << "\n[OK] Robot " << robotID
+                     << " has completed its task and is now available.\n";
+                return true;
+            }
+        }
+        cout << "\n[ERROR] Robot " << robotID << " not found in queue.\n";
+        return false;
+    }
+ 
+    // Set a robot to Maintenance mode (only if it is currently Available)
+    bool setMaintenance(int robotID) {
+        for (int i = 0; i < count; i++) {
+            int index = (front + i) % cap;
+            if (slots[index].robotID == robotID) {
+                if (slots[index].status == "Busy") {
+                    cout << "\n[Reminder] Robot " << robotID
+                         << " is still busy. Complete its task first.\n";
+                    return false;
+                }
+                slots[index].status          = "Maintenance";
+                slots[index].assignedOrderId = -1;
+                cout << "\n[OK] Robot " << robotID << " has been sent to maintenance.\n";
+                return true;
+            }
+        }
+        cout << "\n[ERROR] Robot " << robotID << " not found in queue.\n";
+        return false;
+    }
+ 
+    // Restore a robot from Maintenance back to Available
+    bool restoreRobot(int robotID) {
+        for (int i = 0; i < count; i++) {
+            int index = (front + i) % cap;
+            if (slots[index].robotID == robotID) {
+                if (slots[index].status != "Maintenance") {
+                    cout << "\n[Reminder] Robot " << robotID
+                         << " is not currently under maintenance.\n";
+                    return false;
+                }
+                slots[index].status = "Available";
+                cout << "\n[OK] Robot " << robotID
+                     << " has been restored and is now available.\n";
+                return true;
+            }
+        }
+        cout << "\n[ERROR] Robot " << robotID << " not found in queue.\n";
+        return false;
+    }
+
     //Print out the robot that currently in the queue
-    void display(){
-        
+    void displayAll(){
+        cout << endl;
+        cout << string(40, '=') << endl;
+        cout << "Robots in Circular Queue:" << endl;
+        cout << string(40, '=') << endl << endl;
+
         //Chk whether queue is empty
         if (IsEmpty()){
             cout << "\n[ERROR] No robots are currently in the queue now." << endl;
             return;
         }
-        
-        cout << endl;
-        cout << string(40, '=') << endl;
-        cout << "Robots in Circular Queue:" << endl;
-        cout << string(40, '=') << endl << endl;
         
         //Table header
         cout << left
@@ -113,7 +211,7 @@ struct CircularQueue{
              << setw(12) << "Order ID" << "| "
              << "Tasks Done" << endl;
         
-             cout << string(50, '-') << endl;
+        cout << string(50, '-') << endl;
         
         //Walk through the queue from front to rear
         for (int i = 0; i < count; i++) {
@@ -131,183 +229,70 @@ struct CircularQueue{
                  << slots[index].totalTaskDone << endl;
         }
     }
-};
 
-//Handles robot assignment and task management
-struct RobotAssignmentSystem {
-    Robot* robots;  //dynamic array storing all robots
-    int total;  //total number of robots
-    int nextTurn;   //used for round-robin assignment
-
-    //Constructor
-    //Create robot system with n robots
-    RobotAssignmentSystem(int n) : total(n), nextTurn(0) {
-        robots = new Robot[n];
-        
-        //Assign robot id
-        for (int i = 0; i < n; i++)
-            robots[i].robotID = i + 1;
-    }
-    
-    //Destructor
-    ~RobotAssignmentSystem() { delete[] robots; }
-
-    //Assign available robot to an order
-    //Uses round-robin scheduling
-    int assignRobot(Order* order) {
-        for (int i = 0; i < total; i++) {
-            int index  = nextTurn;
-            
-            //Move to next robot for future assignment
-            nextTurn = (nextTurn + 1) % total;  
-
-            //Chk for available robot
-            if (robots[index].status == "Available") {
-                //Update robot information
-                robots[index].status = "Busy";
-                robots[index].assignedOrderId = order->orderID;
-                robots[index].totalTaskDone++;
-
-                //Update order status
-                order->robotID = robots[index].robotID;
-                order->status = "Processing";
-
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "[Reminder] Order " << order->orderID
-                     << " is now being processed by Robot "
-                     << robots[index].robotID << "." << endl;
-                cout << string(40, '=') << endl;
-                return robots[index].robotID;
-            } 
-        }
-
-        //No available robot found
-        cout << endl;
-        cout << string(40, '=') << endl;
-        cout << "[Reminder] All robots are curently busy. Please try again later." << endl;
-        cout << string(40, '=') << endl;
-        return -1;
-    }
-
-    //Mark robot task as completed
-    bool completeTask(int id) {
-        //Search robot by ID
-        for (int i = 0; i < total; i++) {
-            if (robots[i].robotID == id) {
-                
-                //Robot must be busy before completion
-                if (robots[i].status != "Busy") {
-                    cout << "\n[Reminder] Robot " << id << " is not currently busy.\n";
-                    return false;
-                }
-                
-                //Reset robot status
-                robots[i].status = "Available";
-                robots[i].assignedOrderId = -1;
-                cout << "\n[Reminder] Robot " << id << " has completed its task and is now available.\n";
-                return true;
-            }
-        }
-        
-        //Robot not found
-        cout << "\n[ERROR] Robot " << id << " not found.\n";
-        return false;
-    }
-
-    //Put robot under maintenance
-    bool setMaintenance(int id) {
-        for (int i = 0; i < total; i++) {
-            
-            //Busy robot cannot enter maintenance
-            if (robots[i].robotID == id) {
-                if (robots[i].status == "Busy") {
-                    cout << "\n[Reminder] Robot " << id << " is still busy. Please complete its current task first.\n";
-                    return false;
-                }
-                
-                //Update robot status
-                robots[i].status = "Maintenance";
-                robots[i].assignedOrderId = -1;
-                cout << "\n[Reminder] Robot " << id << " has been sent to maintenance.\n";
-                return true;
-            }
-        }
-
-        //Robot not found
-        cout << "\n[ERROR] Robot " << id << " not found.\n";
-        return false;
-    }
-
-    //Restore robot from maintenance mode
-    bool restoreRobot(int id) {
-        for (int i = 0; i < total; i++) {
-            if (robots[i].robotID == id) {
-                
-                //Robot must currently be under maintenance
-                if (robots[i].status != "Maintenance") {
-                    cout << "\n[Reminder] Robot " << id << " is not currently under maintenance.\n";
-                    return false;
-                }
-                
-                //Restore robot status
-                robots[i].status = "Available";
-                cout << "\n[Reminder] Robot " << id << " has been restored and is now available.\n";
-                return true;
-            }
-        }
-        
-        //Robot not found
-        cout << "\n[ERROR] Robot " << id << " not found.\n";
-        return false;
-    }
-
-    //Display status of all robots
-    void displayAll() {
-        cout << endl;
-        cout << string(40, '=') << endl;
-        cout << "Robot Status Overview:" << endl;
-        cout << string(40, '=') << endl << endl;
-        
-        //Table header
-        cout << left
-             << setw(10) << "Robot ID" << "| "
-             << setw(14) << "Status"   << "| "
-             << setw(12) << "Order ID" << "| "
-             << "Tasks Done" << endl;
-        
-        cout << string(50, '-') << endl;
-        
-        //Display each robot
-        for (int i = 0; i < total; i++) {
-            string ord = (robots[i].assignedOrderId == -1) ? "None" : to_string(robots[i].assignedOrderId);
-            cout << left
-                 << setw(10) << robots[i].robotID << "| "
-                 << setw(14) << robots[i].status  << "| "
-                 << setw(12) << ord               << "| "
-                 << robots[i].totalTaskDone << endl;
-        }
-    }
-
-    //Show all available robots
+    // Display only robots with "Available" status
     void displayAvailable() {
         cout << endl;
         cout << string(40, '=') << endl;
         cout << "Available Robots:" << endl;
         cout << string(40, '=') << endl;
         bool found = false;
-        
-        //Search for available robots
-        for (int i = 0; i < total; i++) {
-            if (robots[i].status == "Available") {
-                cout << "  -> Robot " << robots[i].robotID
-                     << " (tasks completed: " << robots[i].totalTaskDone << ")" << endl;
+        for (int i = 0; i < count; i++) {
+            int index = (front + i) % cap;
+            if (slots[index].status == "Available") {
+                cout << "  -> Robot " << slots[index].robotID
+                     << " (tasks completed: " << slots[index].totalTaskDone << ")" << endl;
                 found = true;
             }
         }
-        
-        //No available robots
-        if (!found) cout << "  No robots are available right now." << endl;
+        if (!found)
+            cout << "  No robots are available right now." << endl;
+    }
+ 
+    // Load robots from a CSV file (robotID,status)
+    // Capitalises the status string to match internal format
+    void loadFromCSV(const string& filename) {
+        ifstream file(filename);
+        if (!file.is_open()) {
+            cout << "\n[ERROR] Could not open file: " << filename << endl;
+            return;
+        }
+ 
+        string line;
+        getline(file, line); // Skip header row
+ 
+        int loaded = 0;
+        while (getline(file, line) && !IsFull()) {
+            // Remove Windows-style carriage return if present
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back();
+ 
+            stringstream ss(line);
+            string idStr, statusStr;
+            getline(ss, idStr,     ',');
+            getline(ss, statusStr, ',');
+ 
+            if (idStr.empty()) continue;
+ 
+            // Capitalise first letter of status to match "Available" / "Busy" / "Maintenance"
+            if (!statusStr.empty()) {
+                statusStr[0] = toupper(statusStr[0]);
+                for (int i = 1; i < (int)statusStr.size(); i++)
+                    statusStr[i] = tolower(statusStr[i]);
+            }
+ 
+            Robot r;
+            r.robotID = stoi(idStr);
+            r.status  = statusStr;
+ 
+            // Advance rear and insert directly (bypasses console output of enqueue)
+            rear        = (rear + 1) % cap;
+            slots[rear] = r;
+            count++;
+            loaded++;
+        }
+        file.close();
+        cout << "\n[OK] Loaded " << loaded << " robot(s) from " << filename << "." << endl;
     }
 };
 

@@ -138,10 +138,6 @@ void runTask1(){
     
     loadItems();
 
-    WaitingQueue waitingQueue;
-    ProcessingQueue processingQueue(5);
-    CompletedQueue completedQueue;
-
     cout << HEADER << endl;
     cout << "Task 1: Order Management" << endl;
     cout << HEADER << endl;
