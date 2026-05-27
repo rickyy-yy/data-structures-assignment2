@@ -31,7 +31,7 @@ struct CircularQueue{
 
     //Constructor
     //Initialize circular queue with given capacity
-    CircularQueue(int capacity) : cap(capacity), front(0), rear(-1), count(0){
+    CircularQueue(int capacity) : cap(capacity), front(0), rear(-1), count(0), currentTurn(0){
         slots = new Robot [cap];
     }
     
@@ -106,13 +106,12 @@ struct CircularQueue{
  
             if (slots[index].status == "Available") {
                 // Assign the robot to the order
-                slots[index].status          = "Busy";
+                slots[index].status = "Busy";
                 slots[index].assignedOrderId = order->orderID;
-                slots[index].totalTaskDone++;
  
                 // Update the order with the assigned robot
                 order->robotID = slots[index].robotID;
-                order->status  = "Processing";
+                order->status = "Processing";
  
                 cout << endl;
                 cout << string(40, '=') << endl;
@@ -140,8 +139,9 @@ struct CircularQueue{
                     cout << "\n[Reminder] Robot " << robotID << " is not currently busy.\n";
                     return false;
                 }
-                slots[index].status          = "Available";
+                slots[index].status = "Available";
                 slots[index].assignedOrderId = -1;
+                slots[index].totalTaskDone++;
                 cout << "\n[OK] Robot " << robotID
                      << " has completed its task and is now available.\n";
                 return true;
@@ -296,5 +296,6 @@ struct CircularQueue{
     }
 };
 
+extern CircularQueue robotQueue;
 void runTask2();
 

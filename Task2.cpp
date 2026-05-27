@@ -1,12 +1,17 @@
 #include "Task2.hpp"
+#include "Task3.hpp"
 #include <iostream>
 #include <limits>
  
 using namespace std;
  
+CircularQueue robotQueue(10);
+
 void runTask2() {
-    CircularQueue robotQueue(10);
-    robotQueue.loadFromCSV(ROBOTS_FILE);
+    
+    if (robotQueue.count == 0) {
+        robotQueue.loadFromCSV(ROBOTS_FILE);
+    }
  
     int choice = 0;
     
@@ -18,19 +23,15 @@ void runTask2() {
         cout << string(40, '=') << endl;
         
         cout << "Do you wish to:" << endl;
-        cout << "1. Record a new order" << endl;
-        cout << "2. Assign order to a robot" << endl;
-        cout << "3. Mark a robot's task as completed" << endl;
-        cout << "4. Set a robot to maintenance" << endl;
-        cout << "5. Restore a robot from maintenance" << endl;
-        cout << "6. Display all robot statuses" << endl;
-        cout << "7. Display available robots" << endl;
-        cout << "8. Display all pending orders" << endl;
-        cout << "9. Display all processing orders" << endl;
-        cout << "10. Display all completed orders" << endl;
-        cout << "11. Exit" << endl;
+        cout << "1. Assign order to a robot" << endl;
+        cout << "2. Mark a robot's task as completed" << endl;
+        cout << "3. Set a robot to maintenance" << endl;
+        cout << "4. Restore a robot from maintenance" << endl;
+        cout << "5. Display all robot statuses" << endl;
+        cout << "6. Display available robots" << endl;
+        cout << "7. Exit" << endl;
         
-        cout << "Enter your choice (1-11): ";
+        cout << "Enter your choice (1-7): ";
         cin >> choice;
  
         //Input validation for menu choice
@@ -39,7 +40,7 @@ void runTask2() {
             cin.ignore(1000000, '\n');
             cout << endl;
             cout << string(40, '=') << endl;
-            cout << "[ERROR] Invalid input. Please enter a number between 1 and 11." << endl;
+            cout << "[ERROR] Invalid input. Please enter a number between 1 and 7." << endl;
             cout << string(40, '=') << endl;
             
             continue;
@@ -47,100 +48,44 @@ void runTask2() {
  
         //Menu selection
         switch (choice) {
- 
-        //Record a new order
-        case 1: {   
-            int itemID, shelfNumber;
-            char packingStation, zone;
- 
-            cout << endl;
-            cout << string(40, '=') << endl;
-            cout << "Recording New Order" << endl;
-            cout << string(40, '=') << endl;
-            cout << "Order ID: " << nextOrderID << endl;
- 
-            //Input item id (validated against items.csv)
-            while (true) {
-                cout << "Enter Item ID: ";
-                if (!(cin >> itemID)) {
-                    cin.clear();
-                    cin.ignore(1000000, '\n');
-                    cout << "[ERROR] Invalid input. Please enter a valid integer." << endl;
-                } else if (!itemList.itemExist(itemID)) {
-                    cout << "[ERROR] Item ID " << itemID << " does not exist in the warehouse." << endl;
-                } else {
-                    break;
-                }
-            }
-            
-            //Input shelf number
-            cout << "Enter Shelf Number: ";
-            while (!(cin >> shelfNumber)) {
-                cin.clear(); 
-                cin.ignore(1000000, '\n');
-                cout << "[ERROR] Invalid input. Please enter a valid Shelf Number: ";
-            }
-            
-            //Input packing station
-            cout << "Enter Packing Station: "; 
-            cin >> packingStation;
-            
-            //Input zone
-            cout << "Enter Zone: ";            
-            cin >> zone;
- 
-            // Construct with ALL correct values at once
-            Order* o = new Order(nextOrderID++, itemID, -1, shelfNumber, packingStation, zone);
- 
-            //Add order into pending queue
-            pendingQueue.enqueue(o);
-            
-            cout << endl;
-            cout << string(40, '=') << endl;
-            cout << "[OK] Order " << o->orderID << " has been recorded and is now pending." << endl;
-            cout << string(40, '=') << endl;
-            
-            break;
-        }
- 
-        //Assign pending order to robot
-        case 2: {
-            //Chk whether penbding queue is empty
-            if (pendingQueue.isEmpty()) {
+  
+        //Assign processing order to robot
+        case 1: {
+            //Chk whether processing queue is empty
+            if (processingQueue.isEmpty()) {
                 cout << endl;
                 cout << string(40, '=') << endl;
-                cout << "[Reminder] There are no pending orders to process right now." << endl;
+                cout << "[Reminder] No orders in processing queue. Use Task 1 option 2 to process an order first." << endl;
                 cout << string(40, '=') << endl;
                 
                 break;
             }
             
             //Chk whether processing queue is full
-            if (processingQueue.isFull()) {
+            bool found = false;
+            for (int i = 0; i < processingQueue.size; i++) {
+                int index = (processingQueue.front + i) % processingQueue.capacity;
+                
+                if (processingQueue.queue[index]->robotID == -1) {
+                    robotQueue.assignNext(processingQueue.queue[index]);
+                    found = true;
+                    
+                    break;
+                }
+            }
+
+            if (!found) {
                 cout << endl;
                 cout << string(40, '=') << endl;
-                cout << "[ERROR] All robots are currently busy. No more orders can be processed." << endl;
+                cout << "[ERROR] No unassigned orders found in processing queue." << endl;
                 cout << string(40, '=') << endl;
-                break;
             }
- 
-            //Remove first pending order
-            Order* o = pendingQueue.dequeue();
-            
-            //Assign robot to order
-            int assigned = robotQueue.assignNext(o);
- 
-            //If robot assignment successful
-            if (assigned != -1)
-                processingQueue.enqueue(o); //MOve order into processing queue
-            else
-                pendingQueue.enqueue(o);    //Put order back into pending queue
-            
+                
             break;
         }
  
         //Mark robot task as completed
-        case 3: {
+        case 2: {
             int robotID;
             cout << "Enter Robot ID: ";
             
@@ -172,8 +117,18 @@ void runTask2() {
             for (int i = 0; i < kept; i++)
                 processingQueue.enqueue(temp[i]);
  
-            if (found)
+            if (found){
                 robotQueue.completeTask(robotID);
+
+                // Integration with Task 3: robot navigates back to start
+                cout << endl;
+                cout << string(40, '=') << endl;
+                cout << "[Task 3] Robot " << robotID << " completed its task." << endl;
+                cout << "[Task 3] Launching navigation module for return journey..." << endl;
+                cout << string(40, '=') << endl;
+                navigateRobot(); // Hand off to Task 3 navigation
+            }
+            
             else {
                 cout << endl;
                 cout << string(40, '=') << endl;
@@ -185,7 +140,7 @@ void runTask2() {
         }
  
         //Send robot to maintenance
-        case 4: {
+        case 3: {
             int id; 
             cout << "Enter Robot ID to send to maintenance: "; 
             
@@ -200,7 +155,7 @@ void runTask2() {
         }
         
         //Restore robot from maintenance
-        case 5: {
+        case 4: {
             int id; 
             cout << "Enter Robot ID to restore: "; 
             
@@ -215,32 +170,17 @@ void runTask2() {
         }
  
         //Display all robot statuses
-        case 6:  
+        case 5:  
             robotQueue.displayAll();          
             break;
         
         //Display available robots
-        case 7:  
+        case 6:  
             robotQueue.displayAvailable();    
-            break;
- 
-        //Display pending orders
-        case 8:  
-            pendingQueue.display();    
-            break;
-        
-        //Display processing orders
-        case 9:  
-            processingQueue.display(); 
-            break;
- 
-        //Display completed orders
-        case 10: 
-            completedQueue.display();  
             break;
         
         //Exit program
-        case 11:
+        case 7:
             cout << "Goodbye! Exiting Task 2." << endl << endl;
             break;
         
@@ -251,6 +191,6 @@ void runTask2() {
     } 
     
     //Repeat until user exits
-    while (choice != 11);
+    while (choice != 7);
 }
  
