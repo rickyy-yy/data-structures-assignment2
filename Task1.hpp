@@ -11,8 +11,8 @@ using namespace std;
 
 const string ITEMS_FILE = "items.csv";
 const string ROBOTS_FILE = "robots.csv";
-const string STATIONS_FILE = "stations.csv";
-const string ZONES_FILE = "zones.csv";
+const string WAITING_QUEUE_FILE = "waiting_queue.csv";
+const string COMPLETED_QUEUE_FILE = "completed_queue.csv";
 const string HEADER = string(80, '=');
 
 struct Item{
@@ -28,7 +28,11 @@ struct ItemArray{
     int capacity;
     int pointer;
 
-    ItemArray() : capacity(0), size(0), array(nullptr) {}
+    ItemArray(){
+        capacity = 0;
+        size = 0;
+        array = nullptr;
+    }
 
     ItemArray(int maxSize){
         pointer = -1;
@@ -177,6 +181,17 @@ struct Order{
     char zone;
     string status;
     Order* next;
+
+    Order(){
+        orderID = -1;
+        itemID = -1;
+        robotID = -1;
+        shelfNumber = -1;
+        packingStation = 'A';
+        zone = 'A';
+        status = "Pending";
+        next = nullptr;
+    }
 
     Order(int thisOrderID, int thisItemID, int thisRobotID, int thisShelfNumber, char thisPackingStation, char thisZone){
         orderID = thisOrderID;

@@ -11,7 +11,7 @@ using namespace std;
 //Stores information about a delivery robot
 struct Robot{
     int robotID;    //unique identifier for robot
-    string status;  //Robot status: Availble, Busy and Mainenance
+    string status;  //Robot status: Available, Busy and Mainenance
     int assignedOrderId;    //current assigned order id
     int totalTaskDone;  //total completed tasks
 
@@ -38,7 +38,7 @@ struct CircularQueue{
     //Destructor
     //Release allocated memory
     ~CircularQueue(){
-        delete [] slots;
+        delete[] slots;
     }
 
     //Check whether queue is empty
