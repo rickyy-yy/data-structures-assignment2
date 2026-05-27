@@ -38,11 +38,6 @@ void loadItems(){
     }
 
     string line;
-     if (itemFile.peek() == 0xEF) {
-        char bom[3];
-        itemFile.read(bom, 3);
-    }
-
     getline(itemFile, line);
     while(getline(itemFile, line)){
         string idString;
@@ -169,7 +164,9 @@ Order* createOrder(){
 
 void runTask1(){
     int choice = 0;
-    
+    int item_count = getFileLength(ITEMS_FILE);
+    itemArray.init(item_count);
+
     loadItems();
 
     cout << HEADER << endl;

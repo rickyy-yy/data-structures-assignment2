@@ -20,76 +20,6 @@ struct Item{
     string itemName;
     int shelfNumber;
     char zone;
-    Item* next;
-};
-
-struct ItemList{
-    Item* head;
-    int count;
-
-    ItemList(){
-        head = nullptr;
-        count = 0;
-    }
-
-    ~ItemList(){
-        Item* current = head;
-        while(current != nullptr){
-            Item* temp = current;
-            current = current->next;
-            delete temp;
-        }
-    }
-
-    bool isEmpty(){
-        return count == 0;
-    }
-
-    void append(Item* item){
-        if(head == nullptr){
-            head = item;
-            count++;
-            return;
-        }
-        Item* current = head;
-        while(current->next != nullptr){
-            current = current->next;
-        }
-        current->next = item;
-        count++;
-    }
-
-    void display(){
-        Item* current = head;
-        if(current == nullptr){
-            cout << HEADER << endl;
-            cout << "No items loaded!" << endl;
-            cout << HEADER << endl;
-            return;
-        }
-        cout << left
-             << setw(10) << "Item ID"
-             << "| " 
-             << setw(10) << "Item Name";
-        while(current != nullptr){
-            cout << left
-                 << setw(10) << current->itemID
-                 << "| "
-                 << setw(10) << current->itemName;
-            current = current->next;
-        }
-    }
-
-    bool itemExist(int queryID){
-        Item* current = head;
-        while(current != nullptr){
-            if(current->itemID == queryID){
-                return true;
-            }
-            current = current->next;
-        }
-        return false;
-    }
 };
 
 struct ItemArray{
@@ -97,6 +27,8 @@ struct ItemArray{
     int size;
     int capacity;
     int pointer;
+
+    ItemArray() : capacity(0), size(0), array(nullptr) {}
 
     ItemArray(int maxSize){
         pointer = -1;
@@ -107,6 +39,14 @@ struct ItemArray{
 
     ~ItemArray(){
         delete[] array;
+    }
+
+    void init(int maxSize){
+        delete[] array;
+        capacity = maxSize;
+        size = 0;
+        pointer = -1;
+        array = new Item[maxSize];
     }
 
     bool isEmpty(){
@@ -123,6 +63,7 @@ struct ItemArray{
         pointer++;
         array[pointer] = item;
         size++;
+        recursion(array, 0, size - 1);
     }
 
     void display(){
@@ -141,7 +82,8 @@ struct ItemArray{
              << "| " 
              << setw(10) << "Shelf Number"
              << "| " 
-             << setw(10) << "Zone";
+             << setw(10) << "Zone"
+             << endl;
              
         while(tempPointer <= pointer){
             cout << left
@@ -151,7 +93,8 @@ struct ItemArray{
                  << "| "
                  << setw(10) << array[tempPointer].shelfNumber
                  << "| "
-                 << setw(10) << array[tempPointer].zone;
+                 << setw(10) << array[tempPointer].zone
+                 << endl;
             tempPointer++;
         }
     }
@@ -576,6 +519,6 @@ extern ProcessingQueue processingQueue;
 extern CompletedQueue completedQueue;
 
 int getFileLength(string filepath);
-void loadItems(ItemArray itemArray);
-Order* createOrder(ItemArray itemArray);
+void loadItems();
+Order* createOrder();
 void runTask1();
