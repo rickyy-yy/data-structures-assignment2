@@ -1,31 +1,13 @@
 #include "Task1.hpp"
 
 int nextOrderID = 1;
-ItemArray itemArray;
+ItemList itemList = ItemList();
 
-int getFileLength(string filepath){
-    ifstream thisFile(filepath);
-
-    if(!thisFile.is_open()){
-        cout << HEADER << endl;
-        cout << "File can't be open!" << endl;
-        cout << HEADER << endl;
-        return -1;
-    }
-
-    string line;
-    int count = 0;
-    getline(thisFile, line);
-    while(getline(thisFile, line)){
-        count++;
-    }
-
-    return count;
-}
+WaitingQueue waitingQueue;
+ProcessingQueue processingQueue(5);
+CompletedQueue completedQueue;
 
 void loadItems(){
-    int item_count = getFileLength(ITEMS_FILE);
-    itemArray.init(item_count);
     ifstream itemFile(ITEMS_FILE);
 
     if(!itemFile.is_open()){
@@ -35,8 +17,12 @@ void loadItems(){
         return;
     }
 
-    int index = 0;
     string line;
+     if (itemFile.peek() == 0xEF) {
+        char bom[3];
+        itemFile.read(bom, 3);
+    }
+
     getline(itemFile, line);
     while(getline(itemFile, line)){
         string idString;
@@ -65,7 +51,7 @@ void loadItems(){
         temp->shelfNumber = shelfNumber;
         temp->zone = zone;
 
-        itemArray.append(temp);
+        itemList.append(temp);
     }
     itemFile.close();
 }
@@ -89,7 +75,7 @@ Order* createOrder(){
             cout << "! Invalid input. Please enter an integer." << endl;
             cout << HEADER << endl;
         }
-        else if(!itemArray.itemExist(thisItemID)){
+        else if(!itemList.itemExist(thisItemID)){
             cin.clear();
             cin.ignore(1000000, '\n');
             cout << endl;
@@ -102,10 +88,21 @@ Order* createOrder(){
         }
     }
 
-    Item thisItem = itemArray.search(thisItemID);
-
-    thisShelfNumber = thisItem.shelfNumber;
-    thisZone = thisItem.zone;
+    while(true){
+        cout << "Enter Shelf Number: ";
+        cin >> thisShelfNumber;
+        if(cin.fail()){
+            cin.clear();
+            cin.ignore(1000000, '\n');
+            cout << endl;
+            cout << HEADER << endl;
+            cout << "! Invalid input. Please enter an integer." << endl;
+            cout << HEADER << endl;
+        }
+        else{
+            break;
+        }
+    }
 
     while(true){
         cout << "Enter Packing Station: ";
@@ -120,6 +117,23 @@ Order* createOrder(){
         }
         else{
             thisPackingStation = toupper(thisPackingStation);
+            break;
+        }
+    }
+
+    while(true){
+        cout << "Enter Zone: ";
+        cin >> thisZone;
+        if(cin.fail()){
+            cin.clear();
+            cin.ignore(1000000, '\n');
+            cout << endl;
+            cout << HEADER << endl;
+            cout << "! Invalid input. Please enter a character." << endl;
+            cout << HEADER << endl;
+        }
+        else{
+            thisZone = toupper(thisZone);
             break;
         }
     }
