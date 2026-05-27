@@ -125,6 +125,9 @@ struct ItemArray{
     }
 
     Item search(int queryID){
+        if(queryID < 1){
+            return Item();
+        }
         int lowerBound = 0;
         int upperBound = size - 1;
 
@@ -319,6 +322,10 @@ struct ProcessingQueue{
     }
 
     ~ProcessingQueue(){
+        for(int i = 0; i < size; i++){
+            int index  = (front + i) % capacity;
+            delete queue[index];
+        }
         delete[] queue;
     }
 

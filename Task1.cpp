@@ -60,13 +60,13 @@ void loadItems(){
         zone = zoneString[0];
         shelfNumber = stoi(shelfNumberString);
 
-        Item* temp = new Item();
-        temp->itemID = itemID;
-        temp->itemName = itemName;
-        temp->shelfNumber = shelfNumber;
-        temp->zone = zone;
+        Item item;
+        item.itemID = itemID;
+        item.itemName = itemName;
+        item.shelfNumber = shelfNumber;
+        item.zone = zone;
 
-        itemArray.append(*temp);
+        itemArray.append(item);
     }
     itemFile.close();
 }
@@ -103,21 +103,9 @@ Order* createOrder(){
         }
     }
 
-    while(true){
-        cout << "Enter Shelf Number: ";
-        cin >> thisShelfNumber;
-        if(cin.fail()){
-            cin.clear();
-            cin.ignore(1000000, '\n');
-            cout << endl;
-            cout << HEADER << endl;
-            cout << "! Invalid input. Please enter an integer." << endl;
-            cout << HEADER << endl;
-        }
-        else{
-            break;
-        }
-    }
+    Item thisItem = itemArray.search(thisItemID);
+    thisShelfNumber = thisItem.shelfNumber;
+    thisZone = thisItem.zone;
 
     while(true){
         cout << "Enter Packing Station: ";
@@ -136,23 +124,6 @@ Order* createOrder(){
         }
     }
 
-    while(true){
-        cout << "Enter Zone: ";
-        cin >> thisZone;
-        if(cin.fail()){
-            cin.clear();
-            cin.ignore(1000000, '\n');
-            cout << endl;
-            cout << HEADER << endl;
-            cout << "! Invalid input. Please enter a character." << endl;
-            cout << HEADER << endl;
-        }
-        else{
-            thisZone = toupper(thisZone);
-            break;
-        }
-    }
-    
     // CHANGE LATER
     thisRobotID = -1;
     // CHANGE LATER
