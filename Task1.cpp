@@ -4,7 +4,7 @@ int nextOrderID = 1;
 ItemArray itemArray;
 
 WaitingQueue waitingQueue;
-ProcessingQueue processingQueue(5);
+ProcessingQueue processingQueue;
 CompletedQueue completedQueue;
 
 int getFileLength(string filepath){
@@ -118,11 +118,13 @@ void loadWaitingQueue(){
         order->zone = zone;
         order->packingStation = packingStation;
 
+        waitingQueue.loading = true;
         waitingQueue.enqueue(order);
         if(orderID >= nextOrderID){
             nextOrderID = orderID + 1;
         }
     }
+    waitingQueue.loading = false;
     waitingQueueFile.close();
 }
 
@@ -177,11 +179,13 @@ void loadCompletedQueue(){
         order->packingStation = packingStation;
         order->robotID = robotID;
 
+        completedQueue.loading = true;
         completedQueue.enqueue(order);
         if(orderID >= nextOrderID){
             nextOrderID = orderID + 1;
         }
     }
+    completedQueue.loading = false;
     completedQueueFile.close();
 }
 
@@ -250,8 +254,17 @@ Order* createOrder(){
 
 void runTask1(){
     int choice = 0;
+    
+    if(processingQueue.capacity == 0){
+        int robot_count = getFileLength(ROBOTS_FILE);
+        processingQueue.resize(robot_count);
+    }
+    
     int item_count = getFileLength(ITEMS_FILE);
     itemArray.init(item_count);
+
+    waitingQueue.clear();
+    completedQueue.clear();
 
     loadWaitingQueue();
     loadCompletedQueue();

@@ -206,11 +206,13 @@ struct Order{
 };
 
 struct WaitingQueue{
+    bool loading;
     Order* front;
     Order* rear;
     int size;
 
     WaitingQueue(){
+        loading = false;
         front = nullptr;
         rear = nullptr;
         size = 0;
@@ -240,6 +242,10 @@ struct WaitingQueue{
             rear = order;
             size++;
 
+            if(loading){
+                return;
+            }
+
             cout << endl << HEADER << endl;
             cout << "Order #" << order->orderID << " is now waiting to be processed." << endl;
             cout << HEADER << endl;
@@ -251,6 +257,10 @@ struct WaitingQueue{
         rear->next = order;
         rear = order;
         size++;
+
+        if(loading){
+            return;
+        }
 
         cout << endl << HEADER << endl;
         cout << "Order #" << order->orderID << " is now waiting to be processed." << endl;
@@ -349,6 +359,18 @@ struct WaitingQueue{
 
         waitingQueueFile.close();
     }
+
+    void clear(){
+        Order* current = front;
+        while(current != nullptr){
+            Order* temp = current->next;
+            delete current;
+            current = temp;
+        }
+        front = nullptr;
+        rear = nullptr;
+        size = 0;
+    }
 };
 
 struct ProcessingQueue{
@@ -358,9 +380,9 @@ struct ProcessingQueue{
     int capacity;
     int size;
     
-    ProcessingQueue(int maxSize){
-        capacity = maxSize;
-        queue = new Order*[capacity];
+    ProcessingQueue(){
+        capacity = 0;
+        queue = nullptr;
         front = 0;
         rear = -1;
         size = 0;
@@ -372,6 +394,53 @@ struct ProcessingQueue{
             delete queue[index];
         }
         delete[] queue;
+    }
+
+    void init(int maxSize){
+        for(int i = 0; i < size; i++){
+            int index  = (front + i) % capacity;
+            delete queue[index];
+        }
+        delete[] queue;
+
+        capacity = maxSize;
+        queue = new Order*[capacity];
+        front = 0;
+        rear = -1;
+        size = 0;
+    }
+
+    void resize(int newCapacity){
+        if(capacity == 0){
+            init(newCapacity);
+            return;
+        }
+        if(newCapacity == capacity){
+            return;
+        }
+        if(newCapacity < size){
+            newCapacity = size;
+        }
+
+        Order** newQueue = new Order*[newCapacity];
+
+        for(int i = 0; i < size; i++){
+            int index = (front + i) % capacity;
+            newQueue[i] = queue[index];
+        }
+
+        delete[] queue;
+
+        queue = newQueue;
+        capacity = newCapacity;
+        front = 0;
+        if(size == 0){
+            rear = -1;
+        }
+        else{
+            rear = size - 1;
+        }
+        
     }
 
     void enqueue(Order* order){
@@ -462,12 +531,14 @@ struct ProcessingQueue{
 };
 
 struct CompletedQueue{
+    bool loading;
     Order* front;
     Order* rear;
     int size;
 
 public:
     CompletedQueue(){
+        loading = false;
         front = nullptr;
         rear = nullptr;
         size = 0;
@@ -498,6 +569,11 @@ public:
             size++;
 
             order->status = "Completed";
+
+            if(loading){
+                return;
+            }
+
             cout << HEADER << endl;
             cout << "Order #" << order->orderID << " has been processed." << endl;
             cout << HEADER << endl;
@@ -511,6 +587,11 @@ public:
         size++;
 
         order->status = "Completed";
+
+        if(loading){
+                return;
+            }
+
         cout << HEADER << endl;
         cout << "Order #" << order->orderID << " has been processed." << endl;
         cout << HEADER << endl;
@@ -590,8 +671,19 @@ public:
 
         completedQueueFile.close();
     }
-};
 
+    void clear(){
+        Order* current = front;
+        while(current != nullptr){
+            Order* temp = current->next;
+            delete current;
+            current = temp;
+        }
+        front = nullptr;
+        rear = nullptr;
+        size = 0;
+    }
+};
 
 extern int nextOrderID;
 extern ItemArray itemArray;
