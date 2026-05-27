@@ -1,11 +1,31 @@
 #include "Task1.hpp"
 
 int nextOrderID = 1;
-ItemList itemList = ItemList();
+ItemArray itemArray;
 
 WaitingQueue waitingQueue;
 ProcessingQueue processingQueue(5);
 CompletedQueue completedQueue;
+
+int getFileLength(string filepath){
+    ifstream thisFile(filepath);
+
+    if(!thisFile.is_open()){
+        cout << HEADER << endl;
+        cout << "File can't be open!" << endl;
+        cout << HEADER << endl;
+        return -1;
+    }
+
+    string line;
+    int count = 0;
+    getline(thisFile, line);
+    while(getline(thisFile, line)){
+        count++;
+    }
+
+    return count;
+}
 
 void loadItems(){
     ifstream itemFile(ITEMS_FILE);
@@ -51,7 +71,7 @@ void loadItems(){
         temp->shelfNumber = shelfNumber;
         temp->zone = zone;
 
-        itemList.append(temp);
+        itemArray.append(*temp);
     }
     itemFile.close();
 }
@@ -75,7 +95,7 @@ Order* createOrder(){
             cout << "! Invalid input. Please enter an integer." << endl;
             cout << HEADER << endl;
         }
-        else if(!itemList.itemExist(thisItemID)){
+        else if(!itemArray.itemExist(thisItemID)){
             cin.clear();
             cin.ignore(1000000, '\n');
             cout << endl;

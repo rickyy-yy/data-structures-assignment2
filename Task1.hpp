@@ -155,6 +155,71 @@ struct ItemArray{
             tempPointer++;
         }
     }
+
+    void recursion(Item array[], int lowerBound, int upperBound){
+        if(lowerBound < upperBound){
+            int pivot = partition(array, lowerBound, upperBound);
+            recursion(array, lowerBound, pivot - 1);
+            recursion(array, pivot + 1, upperBound);
+        }
+        else{
+            return;
+        }
+    }
+
+    int partition(Item array[], int lowerBound, int upperBound){
+        int pivot = array[upperBound].itemID;
+        int i = lowerBound;
+
+        for(int j = lowerBound; j < upperBound; j++){
+            if(array[j].itemID <= pivot){
+                swap(array[i], array[j]);
+                i++;
+            }
+        }
+        swap(array[i], array[upperBound]);
+        return i;
+    }
+
+    Item search(int queryID){
+        int lowerBound = 0;
+        int upperBound = size - 1;
+
+        while(lowerBound <= upperBound){
+            int mid = (lowerBound + upperBound) / 2;
+
+            if(array[mid].itemID == queryID){
+                return array[mid];
+            }
+            else if(array[mid].itemID < queryID){
+                lowerBound = mid + 1;
+            }
+            else{
+                upperBound = mid - 1;
+            }
+        }
+        return Item();
+    }
+
+    bool itemExist(int queryID){
+        int lowerBound = 0;
+        int upperBound = size - 1;
+
+        while(lowerBound <= upperBound){
+            int mid = (lowerBound + upperBound) / 2;
+
+            if(array[mid].itemID == queryID){
+                return true;
+            }
+            else if(array[mid].itemID < queryID){
+                lowerBound = mid + 1;
+            }
+            else{
+                upperBound = mid - 1;
+            }
+        }
+        return false;
+    }
 };
 
 struct Order{
@@ -295,8 +360,7 @@ public:
     }
 };
 
-class ProcessingQueue{
-public:
+struct ProcessingQueue{
     Order** queue;
     int front;
     int rear;
@@ -504,11 +568,14 @@ public:
     }
 };
 
+
 extern int nextOrderID;
-extern ItemList itemList;
+extern ItemArray itemArray;
 extern WaitingQueue waitingQueue;
 extern ProcessingQueue processingQueue;
 extern CompletedQueue completedQueue;
 
-Order* createOrder();
+int getFileLength(string filepath);
+void loadItems(ItemArray itemArray);
+Order* createOrder(ItemArray itemArray);
 void runTask1();
