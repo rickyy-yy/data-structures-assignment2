@@ -178,6 +178,21 @@ void runTask2() {
         case 6:  
             robotQueue.displayAvailable();    
             break;
+ 
+        //Display pending orders
+        case 8:  
+            waitingQueue.display();    
+            break;
+        
+        //Display processing orders
+        case 9:  
+            processingQueue.display(); 
+            break;
+ 
+        //Display completed orders
+        case 10: 
+            completedQueue.display();  
+            break;
         
         //Exit program
         case 7:

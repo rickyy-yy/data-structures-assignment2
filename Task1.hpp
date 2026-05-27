@@ -31,6 +31,7 @@ struct ItemArray{
     ItemArray(){
         capacity = 0;
         size = 0;
+        pointer = -1;
         array = nullptr;
     }
 
@@ -67,7 +68,6 @@ struct ItemArray{
         pointer++;
         array[pointer] = item;
         size++;
-        recursion(array, 0, size - 1);
     }
 
     void display(){
@@ -205,12 +205,11 @@ struct Order{
     }
 };
 
-class WaitingQueue{
+struct WaitingQueue{
     Order* front;
     Order* rear;
     int size;
 
-public:
     WaitingQueue(){
         front = nullptr;
         rear = nullptr;
@@ -241,9 +240,11 @@ public:
             rear = order;
             size++;
 
-            cout << HEADER << endl;
+            cout << endl << HEADER << endl;
             cout << "Order #" << order->orderID << " is now waiting to be processed." << endl;
             cout << HEADER << endl;
+            
+            updateFile();
 
             return;
         }
@@ -254,6 +255,8 @@ public:
         cout << endl << HEADER << endl;
         cout << "Order #" << order->orderID << " is now waiting to be processed." << endl;
         cout << HEADER << endl;
+
+        updateFile();
 
         return;
     }
@@ -268,9 +271,11 @@ public:
         Order* temp = front;
         front = front->next;
         size--;
+        updateFile();
 
-        if(front == nullptr)   
-        rear = nullptr; 
+        if(front == nullptr){
+            rear = nullptr;  
+        }
         return temp;
     }
 
@@ -318,6 +323,31 @@ public:
                  << endl;
             current = current->next;
         }
+    }
+
+    void updateFile(){
+        ofstream waitingQueueFile(WAITING_QUEUE_FILE);
+
+        if(!waitingQueueFile.is_open()){
+            cout << HEADER << endl;
+            cout << "Waiting queue file can't be open!" << endl;
+            cout << HEADER << endl;
+            return;
+        }
+
+        if(!isEmpty()){
+            waitingQueueFile << "orderID,itemID,shelfNumber,zone,packingStation" << "\n";
+            Order* current = front;
+            while(current != nullptr){
+                waitingQueueFile << current->orderID << "," << current->itemID << "," << current->shelfNumber << "," << current->zone << "," << current->packingStation << "\n";
+                current = current->next;
+            }
+        }
+        else{
+            waitingQueueFile << "orderID,itemID,shelfNumber,zone,packingStation" << "\n";
+        }
+
+        waitingQueueFile.close();
     }
 };
 
@@ -431,7 +461,7 @@ struct ProcessingQueue{
     }
 };
 
-class CompletedQueue{
+struct CompletedQueue{
     Order* front;
     Order* rear;
     int size;
@@ -472,6 +502,8 @@ public:
             cout << "Order #" << order->orderID << " has been processed." << endl;
             cout << HEADER << endl;
 
+            updateFile();
+
             return;
         }
         rear->next = order;
@@ -482,6 +514,8 @@ public:
         cout << HEADER << endl;
         cout << "Order #" << order->orderID << " has been processed." << endl;
         cout << HEADER << endl;
+        
+        updateFile();
         
         return;
     }
@@ -530,6 +564,31 @@ public:
                  << endl;
             current = current->next;
         }
+    }
+
+    void updateFile(){
+        ofstream completedQueueFile(COMPLETED_QUEUE_FILE);
+
+        if(!completedQueueFile.is_open()){
+            cout << HEADER << endl;
+            cout << "Completed queue file can't be open!" << endl;
+            cout << HEADER << endl;
+            return;
+        }
+
+        if(!isEmpty()){
+            completedQueueFile << "orderID,itemID,shelfNumber,zone,packingStation,robotID" << "\n";
+            Order* current = front;
+            while(current != nullptr){
+                completedQueueFile << current->orderID << "," << current->itemID << "," << current->shelfNumber << "," << current->zone << "," << current->packingStation << "," << current->robotID << "\n";
+                current = current->next;
+            }
+        }
+        else{
+            completedQueueFile << "orderID,itemID,shelfNumber,zone,packingStation,robotID" << "\n";
+        }
+
+        completedQueueFile.close();
     }
 };
 

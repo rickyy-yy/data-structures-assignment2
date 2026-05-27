@@ -14,7 +14,7 @@ int getFileLength(string filepath){
         cout << HEADER << endl;
         cout << "File can't be open!" << endl;
         cout << HEADER << endl;
-        return -1;
+        return 0;
     }
 
     string line;
@@ -69,6 +69,7 @@ void loadItems(){
         itemArray.append(item);
     }
     itemFile.close();
+    itemArray.recursion(itemArray.array, 0, itemArray.size - 1);
 }
 
 void loadWaitingQueue(){
@@ -88,11 +89,13 @@ void loadWaitingQueue(){
         int itemID;
         int shelfNumber;
         char zone;
+        char packingStation;
 
         string orderIDString;
         string itemIDString;
         string shelfNumberString;
         string zoneString;
+        string packingStationString;
 
         stringstream stringStream(line);
 
@@ -100,19 +103,25 @@ void loadWaitingQueue(){
         getline(stringStream, itemIDString, ',');
         getline(stringStream, shelfNumberString, ',');
         getline(stringStream, zoneString, ',');
+        getline(stringStream, packingStationString, ',');
 
         orderID = stoi(orderIDString);
         itemID = stoi(itemIDString);
         zone = zoneString[0];
         shelfNumber = stoi(shelfNumberString);
+        packingStation = packingStationString[0];
 
-        Order order;
-        order.orderID = orderID;
-        order.itemID = itemID;
-        order.shelfNumber = shelfNumber;
-        order.zone = zone;
+        Order* order = new Order();
+        order->orderID = orderID;
+        order->itemID = itemID;
+        order->shelfNumber = shelfNumber;
+        order->zone = zone;
+        order->packingStation = packingStation;
 
-        waitingQueue.enqueue(&order);
+        waitingQueue.enqueue(order);
+        if(orderID >= nextOrderID){
+            nextOrderID = orderID + 1;
+        }
     }
     waitingQueueFile.close();
 }
@@ -122,7 +131,7 @@ void loadCompletedQueue(){
 
     if(!completedQueueFile.is_open()){
         cout << HEADER << endl;
-        cout << "Waiting queue file can't be open!" << endl;
+        cout << "Completed queue file can't be open!" << endl;
         cout << HEADER << endl;
         return;
     }
@@ -134,12 +143,14 @@ void loadCompletedQueue(){
         int itemID;
         int shelfNumber;
         char zone;
+        char packingStation;
         int robotID;
 
         string orderIDString;
         string itemIDString;
         string shelfNumberString;
         string zoneString;
+        string packingStationString;
         string robotIDString;
 
         stringstream stringStream(line);
@@ -148,39 +159,30 @@ void loadCompletedQueue(){
         getline(stringStream, itemIDString, ',');
         getline(stringStream, shelfNumberString, ',');
         getline(stringStream, zoneString, ',');
+        getline(stringStream, packingStationString, ',');
         getline(stringStream, robotIDString, ',');
 
         orderID = stoi(orderIDString);
         itemID = stoi(itemIDString);
         zone = zoneString[0];
         shelfNumber = stoi(shelfNumberString);
+        packingStation = packingStationString[0];
         robotID = stoi(robotIDString);
 
-        Order order;
-        order.orderID = orderID;
-        order.itemID = itemID;
-        order.shelfNumber = shelfNumber;
-        order.zone = zone;
-        order.robotID = robotID;
+        Order* order = new Order();
+        order->orderID = orderID;
+        order->itemID = itemID;
+        order->shelfNumber = shelfNumber;
+        order->zone = zone;
+        order->packingStation = packingStation;
+        order->robotID = robotID;
 
-        completedQueue.enqueue(&order);
+        completedQueue.enqueue(order);
+        if(orderID >= nextOrderID){
+            nextOrderID = orderID + 1;
+        }
     }
     completedQueueFile.close();
-}
-
-void updateWaitingQueueFile(Order* order){
-    ofstream waitingQueueFile(WAITING_QUEUE_FILE, ios::out | ios::app);
-
-    if(!waitingQueueFile.is_open()){
-        cout << HEADER << endl;
-        cout << "Waiting queue file can't be open!" << endl;
-        cout << HEADER << endl;
-        return;
-    }
-
-    waitingQueueFile << order->orderID << "," <<  order->itemID << "," << order->shelfNumber << "," << order->zone << '\n';
-
-    waitingQueueFile.close();
 }
 
 Order* createOrder(){
@@ -251,13 +253,8 @@ void runTask1(){
     int item_count = getFileLength(ITEMS_FILE);
     itemArray.init(item_count);
 
-    if(getFileLength(WAITING_QUEUE_FILE) != 0){
-        loadWaitingQueue();
-    }
-
-    if(getFileLength(COMPLETED_QUEUE_FILE) != 0){
-        loadCompletedQueue();
-    }
+    loadWaitingQueue();
+    loadCompletedQueue();
 
     loadItems();
 
@@ -318,7 +315,7 @@ void runTask1(){
                 }
                 processingQueue.enqueue(waitingQueue.dequeue());
                 break;
-            case 3:
+            case 3: {
                 // Complete Order (Enqueue + Dequeue)
                 if(processingQueue.isEmpty()){
                     cout << HEADER << endl;
@@ -326,8 +323,10 @@ void runTask1(){
                     cout << HEADER << endl;
                     break;
                 }
-                completedQueue.enqueue(processingQueue.dequeue());
+                Order* doneOrder = processingQueue.dequeue();
+                completedQueue.enqueue(doneOrder);
                 break;
+            }
             case 4:
                 waitingQueue.display();
                 break;
