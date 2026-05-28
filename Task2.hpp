@@ -8,9 +8,9 @@
 
 using namespace std;
 
-//Stores information about a delivery robot
+//Stores robot information
 struct Robot{
-    int robotID;    //unique identifier for robot
+    int robotID;    //unique robot ID
     string status;  //Robot status: Available, Busy and Mainenance
     int assignedOrderId;    //current assigned order id
     int totalTaskDone;  //total completed tasks
@@ -24,7 +24,7 @@ struct Robot{
     }
 };
 
-//Circular queue used to manage robots
+//Circular queue used to manage all robots
 struct CircularQueue{
     Robot* slots;   //dynamic array for queue storage
     int cap, front, rear, count, currentTurn;
@@ -51,22 +51,22 @@ struct CircularQueue{
         return count == cap;
     }
 
-    //Add a robot to the rear of the queue
+    //Add robot into queue
     void enqueue(Robot r){
         
-        //Prevent insertion if queue is full
+        //Prevent adding if queue is already full
         if(IsFull()){
             cout << "\n[ERROR] Queue is full! Cannot add on more robots." << endl;
             return;
         }
 
-        //Move rear position circularly
+        //Move rear pointer circularly
         rear = (rear + 1) % cap;
         
-        //Insert robot into queue
+        //Store robot into queue
         slots[rear] = r;
         
-        //Increase queue size
+        //Increase robot count
         count ++;
 
         cout << "\n Robot " << r.robotID << "\n added to queue." << endl;
@@ -94,7 +94,10 @@ struct CircularQueue{
         return r;
     }
 
+    //Assign next waiting order to an available robot
     void assignNextFromWaiting(){
+        
+        //Chk if waiting queue is empty
         if(waitingQueue.isEmpty()){
             cout << endl;
             cout << string(40,'=') << endl;
@@ -102,6 +105,8 @@ struct CircularQueue{
             cout << string(40,'=') << endl;
             return;
         }
+        
+        //Chk if all processing slots are occupied
         if(processingQueue.isFull()){
             cout << endl;
             cout << string(40,'=') << endl;
@@ -114,13 +119,18 @@ struct CircularQueue{
         int assignedSlot = -1;
         for(int attempt = 0; attempt < count; attempt++){
             int index = (front + currentTurn) % cap;
+            
+            //Move turn pointer
             currentTurn = (currentTurn + 1) % count;
+            
+            //Chk if robot is available
             if(slots[index].status == "Available"){
                 assignedSlot = index;
                 break;
             }
         }
 
+        //No available robot found
         if(assignedSlot == -1){
             cout << endl;
             cout << string(40,'=') << endl;
@@ -130,7 +140,7 @@ struct CircularQueue{
             return;
         }
 
-        // Dequeue order from waitingQueue (also rewrites waiting_queue.csv)
+        // Remove order from waitingQueue
         Order* order = waitingQueue.dequeue();
         if(order == nullptr) return;
 
@@ -140,7 +150,7 @@ struct CircularQueue{
         order->robotID = slots[assignedSlot].robotID;
         order->status = "Processing";
 
-        // Place order into processingQueue (in-memory)
+        // Place order into processingQueue
         processingQueue.enqueue(order);
 
         cout << endl;
@@ -149,6 +159,7 @@ struct CircularQueue{
              << " assigned to Robot " << slots[assignedSlot].robotID << "." << endl;
         cout << string(40,'=') << endl;
 
+        //Save updated robot data
         saveToCSV(ROBOTS_FILE);
     }
 
@@ -156,6 +167,8 @@ struct CircularQueue{
     // Mark a robot's task as completed and set it back to Available
     bool completeTask(int robotID) {
         int robotSlot = -1;
+        
+        //Search  robot by ID
         for (int i = 0; i < count; i++) {
             int index = (front + i) % cap;
             if (slots[index].robotID == robotID) { 
@@ -164,10 +177,13 @@ struct CircularQueue{
             }
         }
 
+        //Robot not found
         if(robotSlot == -1){
             cout << "\n[ERROR] Robot " << robotID << " not found in queue.\n";
             return false;
         }
+        
+        //Robot is not busy
         if(slots[robotSlot].status != "Busy"){
             cout << "\n[Reminder] Robot " << robotID << " is not currently busy.\n";
             return false;
@@ -175,46 +191,61 @@ struct CircularQueue{
 
         // Find and pull the matching order out of processingQueue
         Order* doneOrder = nullptr;
+        
+         //temp array to store remaining orders
         Order* temp[50]  = {};
         int    kept      = 0;
 
+       //Remove all orders from processing queue
         while(!processingQueue.isEmpty()){
             Order* o = processingQueue.dequeue();
+            
+            //Find order handled by selected robot
             if(o && o->robotID == robotID && doneOrder == nullptr){
                 doneOrder = o;
-            } else if(o){
+            } 
+            
+            //Keep other orders temporarily
+            else if(o){
                 temp[kept++] = o;
             }
         }
+
         // Re-insert the orders that belong to other robots
         for(int j = 0; j < kept; j++)
             processingQueue.enqueue(temp[j]);
 
+        //Order not found
         if(doneOrder == nullptr){
             cout << "\n[ERROR] Could not find order assigned to Robot " << robotID << ".\n";
-            // Still free the robot so it doesn't stay locked
-            slots[robotSlot].status          = "Available";
+            
+            // Free robot anyway
+            slots[robotSlot].status = "Available";
             slots[robotSlot].assignedOrderId = -1;
             slots[robotSlot].totalTaskDone++;
+            
             saveToCSV(ROBOTS_FILE);
+            
             return false;
         }
 
-        // Move order to completedQueue (writes completed_queue.csv)
+        // Move completed order to completedQueue
         completedQueue.enqueue(doneOrder);
 
-        // Free the robot
-        slots[robotSlot].status          = "Available";
+        // Reset robot information
+        slots[robotSlot].status = "Available";
         slots[robotSlot].assignedOrderId = -1;
         slots[robotSlot].totalTaskDone++;
 
         cout << "\n[OK] Robot " << robotID
              << " has completed its task and is now available.\n";
 
+        //Save updated robot data
         saveToCSV(ROBOTS_FILE);
 
-        // Auto-assign next waiting order if any exist
+        // Auto-assign next order if waiting queue still has orders
         if(!waitingQueue.isEmpty()){
+            
             cout << "\n[Reminder] Checking waiting queue for next order..." << endl;
             assignNextFromWaiting();
         }
@@ -222,31 +253,42 @@ struct CircularQueue{
         return true;
     }
 
-    // Set a robot to Maintenance mode (only if it is currently Available)
+    // Toggle Maintenance mode
     bool toggleMaintenance(int robotID) {
+        
+        //Search robot
         for (int i = 0; i < count; i++) {
             int index = (front + i) % cap;
             if (slots[index].robotID == robotID) {
+                
+                //Prevent maintenance if robot is busy
                 if (slots[index].status == "Busy") {
                     cout << "\n[Reminder] Robot " << robotID
                          << " is still busy. Complete its task first.\n";
                     return false;
                 }
                 
+                //Change available to Maintenance
                 if (slots[index].status == "Available") {
                     slots[index].status = "Maintenance";
                     cout << "\n[OK] Robot " << robotID << " has been sent to maintenance.\n";
                 }
 
+                //Chg Maintenance to Available
                 else{
                     slots[index].status = "Available";
                     cout << "\n[OK] Robot " << robotID << " has been restored and is now available.\n";
                 } 
+                
                 saveToCSV(ROBOTS_FILE);
+                
                 return true;
             }
         }
+        
+        //Robot not found
         cout << "\n[ERROR] Robot " << robotID << " not found in queue.\n";
+        
         return false;
     }
  
@@ -272,8 +314,9 @@ struct CircularQueue{
         
         cout << string(50, '-') << endl;
         
-        //Walk through the queue from front to rear
+        //Display all robot details
         for (int i = 0; i < count; i++) {
+
             //Calculate actual index circularly
             int index = (front + i) % cap;
             
@@ -295,7 +338,9 @@ struct CircularQueue{
         cout << string(40, '=') << endl;
         cout << "Available Robots:" << endl;
         cout << string(40, '=') << endl;
+        
         bool found = false;
+        
         for (int i = 0; i < count; i++) {
             int index = (front + i) % cap;
             if (slots[index].status == "Available") {
@@ -304,131 +349,198 @@ struct CircularQueue{
                 found = true;
             }
         }
+        
+        //No available robots
         if (!found)
             cout << "  No robots are available right now." << endl;
     }
  
-    // Load robots from a CSV file (robotID,status)
-    // Capitalises the status string to match internal format
+    // Load robots from a CSV file
     void loadFromCSV(const string& filename) {
         ifstream file(filename);
+        
+        //Chk if file can be opened
         if (!file.is_open()) {
             cout << "\n[ERROR] Could not open file: " << filename << endl;
             return;
         }
  
         string line;
+        
+        //Skip CSV header
         getline(file, line); // Skip header row
  
         int loaded = 0;
         while (getline(file, line) && !IsFull()) {
-            // Remove Windows-style carriage return if present
-            if (!line.empty() && line.back() == '\r') line.pop_back();
+            
+            // Remove '\r' if exists
+            if (!line.empty() && line.back() == '\r') 
+            line.pop_back();
  
             stringstream ss(line);
+            
             string idStr, statusStr;
+            
             getline(ss, idStr,     ',');
             getline(ss, statusStr, ',');
  
-            if (idStr.empty()) continue;
+            //Skip invalid row
+            if (idStr.empty()) 
+                continue;
  
-            // Capitalise first letter of status to match "Available" / "Busy" / "Maintenance"
+            //Standardize status text format
             if (!statusStr.empty()) {
                 statusStr[0] = toupper(statusStr[0]);
+                
                 for (int i = 1; i < (int)statusStr.size(); i++)
                     statusStr[i] = tolower(statusStr[i]);
             }
 
+            //Default invalid status to Available
             if (statusStr != "Available" && statusStr != "Maintenance")
                 statusStr = "Available";
  
             Robot r;
+            
             r.robotID = stoi(idStr);
             r.status  = statusStr;
  
-            // Advance rear and insert directly (bypasses console output of enqueue)
+            //Insert robot directly into queue
             rear = (rear + 1) % cap;
             slots[rear] = r;
+            
             count++;
             loaded++;
         }
+        
         file.close();
+        
         cout << "\n[OK] Loaded " << loaded << " robot(s) from " << filename << "." << endl;
     }
 
+    //Save robots data into CSV file
     void saveToCSV(const string& filename) {
         ofstream file(filename);
+        
+        //Chk file opening
         if (!file.is_open()) {
             cout << "\n[ERROR] Could not open file for writing: " << filename << endl;
             return;
         }
+        
+        //CSV header
         file << "robotID,status\n";
+        
+        //Save all robots
         for (int i = 0; i < count; i++) {
             int index = (front + i) % cap;
+            
+            //Busy robots are saved as Available
             string savedStatus = (slots[index].status == "Busy") ? "Available" : slots[index].status;
+            
             file << slots[index].robotID << "," << savedStatus << "\n";
         }
+        
         file.close();
     }
 
+    //Add new robot into queue
     void addRobot() {
+        
+        //Prevent overflow
         if (IsFull()) {
             cout << "\n[ERROR] Cannot add robot — queue is at full capacity (" << cap << ")." << endl;
             return;
         }
+        
+        //Find highest robot ID
         int maxID = 0;
+
         for (int i = 0; i < count; i++) {
             int index = (front + i) % cap;
             if (slots[index].robotID > maxID)
                 maxID = slots[index].robotID;
         }
+
+        //Create new robot
         Robot r;
+        
         r.robotID = maxID + 1;
         r.status  = "Available";
+        
+        //Insert into queue
         rear = (rear + 1) % cap;
         slots[rear] = r;
+        
         count++;
+        
         cout << "\n[OK] Robot " << r.robotID << " added and set to Available." << endl;
+        
         saveToCSV(ROBOTS_FILE);
     }
 
+    //Delete robot from queue
     void deleteRobot(int robotID) {
         int found = -1;
+        
+        //Search robot
         for (int i = 0; i < count; i++) {
             int index = (front + i) % cap;
             if (slots[index].robotID == robotID) {
+                
                 found = i;
                 break;
             }
         }
+        
+        //Robot not found
         if (found == -1) {
             cout << "\n[ERROR] Robot " << robotID << " not found." << endl;
             return;
         }
+        
         int index = (front + found) % cap;
+        
+        //Prevent deletion if robot is busy
         if (slots[index].status == "Busy") {
             cout << "\n[Reminder] Robot " << robotID
                  << " is currently busy. Complete its task before deleting." << endl;
             return;
         }
+
+        //Create new queue without deleted robot
         Robot* newSlots = new Robot[cap];
+
         int newCount = 0;
+
         for (int i = 0; i < count; i++) {
             int idx = (front + i) % cap;
             if (slots[idx].robotID != robotID)
                 newSlots[newCount++] = slots[idx];
         }
+
+        //Replace old queue
         delete[] slots;
+        
         slots  = newSlots;
+        
         front  = 0;
         rear   = (newCount == 0) ? -1 : newCount - 1;
+        
         count  = newCount;
+        
+        //Adjust round-robin pointer
         currentTurn = (count == 0) ? 0 : currentTurn % count;
+        
         cout << "\n[OK] Robot " << robotID << " has been deleted." << endl;
+        
         saveToCSV(ROBOTS_FILE);  
     }
 };
 
+//External declaration of robot queue
 extern CircularQueue robotQueue;
+
+//Function declaration
 void runTask2();
 
