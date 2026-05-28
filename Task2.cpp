@@ -4,13 +4,33 @@
 #include <limits>
  
 using namespace std;
- 
-CircularQueue robotQueue(10);
+void loadItems();
+void loadWaitingQueue();
+void loadCompletedQueue();
+int getFileLength(string filepath);
+
+CircularQueue robotQueue(50);
 
 void runTask2() {
     
     if (robotQueue.count == 0) {
         robotQueue.loadFromCSV(ROBOTS_FILE);
+    }
+
+    // Initialize processingQueue capacity if entering Task2 directly
+    if (processingQueue.capacity == 0) {
+        int robot_count = getFileLength(ROBOTS_FILE);
+        if (robot_count < 1) robot_count = 50;
+        processingQueue.resize(robot_count);
+    }
+
+    // Load queues and items if not already loaded
+    if (waitingQueue.size == 0 && completedQueue.size == 0) {
+        int item_count = getFileLength(ITEMS_FILE);
+        itemArray.init(item_count);
+        loadItems();
+        loadWaitingQueue();
+        loadCompletedQueue();
     }
  
     int choice = 0;
@@ -23,15 +43,16 @@ void runTask2() {
         cout << string(40, '=') << endl;
         
         cout << "Do you wish to:" << endl;
-        cout << "1. Assign order to a robot" << endl;
-        cout << "2. Mark a robot's task as completed" << endl;
-        cout << "3. Set a robot to maintenance" << endl;
-        cout << "4. Restore a robot from maintenance" << endl;
-        cout << "5. Display all robot statuses" << endl;
-        cout << "6. Display available robots" << endl;
-        cout << "7. Exit" << endl;
+         cout << "1. Add robot\n";
+        cout << "2. Delete robot\n";
+        cout << "3. Toggle robot maintenance mode\n";
+        cout << "4. Assign order to a robot\n";
+        cout << "5. Mark a robot's task as completed\n";
+        cout << "6. Display all robot statuses\n";
+        cout << "7. Display available robots\n";
+        cout << "8. Exit\n";
         
-        cout << "Enter your choice (1-7): ";
+        cout << "Enter your choice (1-8): ";
         cin >> choice;
  
         //Input validation for menu choice
@@ -40,172 +61,78 @@ void runTask2() {
             cin.ignore(1000000, '\n');
             cout << endl;
             cout << string(40, '=') << endl;
-            cout << "[ERROR] Invalid input. Please enter a number between 1 and 7." << endl;
+            cout << "[ERROR] Invalid input. Please enter a number between 1 and 8." << endl;
             cout << string(40, '=') << endl;
             
             continue;
         }
  
-        //Menu selection
         switch (choice) {
-  
-        //Assign processing order to robot
-        case 1: {
-            //Chk whether processing queue is empty
-            if (processingQueue.isEmpty()) {
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "[Reminder] No orders in processing queue. Use Task 1 option 2 to process an order first." << endl;
-                cout << string(40, '=') << endl;
-                
-                break;
-            }
-            
-            //Chk whether processing queue is full
-            bool found = false;
-            for (int i = 0; i < processingQueue.size; i++) {
-                int index = (processingQueue.front + i) % processingQueue.capacity;
-                
-                if (processingQueue.queue[index]->robotID == -1) {
-                    robotQueue.assignNext(processingQueue.queue[index]);
-                    found = true;
-                    
-                    break;
-                }
-            }
-
-            if (!found) {
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "[ERROR] No unassigned orders found in processing queue." << endl;
-                cout << string(40, '=') << endl;
-            }
-                
+        case 1:
+            robotQueue.addRobot();
             break;
-        }
- 
-        //Mark robot task as completed
+
         case 2: {
-            int robotID;
-            cout << "Enter Robot ID: ";
-            
-            //Input validation
-            while (!(cin >> robotID)) {
-                cin.clear(); 
-                cin.ignore(1000000, '\n');
+            int id;
+            cout << "Enter Robot ID to delete: ";
+            while (!(cin >> id)) {
+                cin.clear(); cin.ignore(1000000, '\n');
                 cout << "[ERROR] Invalid input. Please enter a valid Robot ID: ";
             }
- 
-            bool found = false;
-            
-            Order* temp[10] = {};
-            int kept = 0;
- 
-            // pull out all orders, find the one matching this robot
-            while (!processingQueue.isEmpty()) {
-                Order* o = processingQueue.dequeue();
-                if (o && o->robotID == robotID && !found) {
-                    completedQueue.enqueue(o); // archive it
-                    found = true;
-                } 
-                else if (o) {
-                    temp[kept++] = o; // not the right order, hold it
-                }
-            }
-            
-            //Update robot status
-            for (int i = 0; i < kept; i++)
-                processingQueue.enqueue(temp[i]);
- 
-            if (found){
-                robotQueue.completeTask(robotID);
+            robotQueue.deleteRobot(id);
+            break;
+        }
 
-                // Integration with Task 3: robot navigates back to start
-                cout << endl;
-                cout << string(40, '=') << endl;
+        case 3: {
+            int id;
+            cout << "Enter Robot ID to toggle maintenance: ";
+            while (!(cin >> id)) {
+                cin.clear(); cin.ignore(1000000, '\n');
+                cout << "[ERROR] Invalid input. Please enter a valid Robot ID: ";
+            }
+            robotQueue.toggleMaintenance(id);
+            break;
+        }
+
+        case 4:
+            robotQueue.assignNextFromWaiting();
+            break;
+
+        case 5: {
+            int robotID;
+            cout << "Enter Robot ID: ";
+            while (!(cin >> robotID)) {
+                cin.clear(); cin.ignore(1000000, '\n');
+                cout << "[ERROR] Invalid input. Please enter a valid Robot ID: ";
+            }
+            if (robotQueue.completeTask(robotID)) {
+                cout << "\n" << string(40, '=') << endl;
                 cout << "[Task 3] Robot " << robotID << " completed its task." << endl;
                 cout << "[Task 3] Launching navigation module for return journey..." << endl;
                 cout << string(40, '=') << endl;
-                navigateRobot(); // Hand off to Task 3 navigation
+                navigateRobot();
             }
-            
-            else {
-                cout << endl;
-                cout << string(40, '=') << endl;
-                cout << "[Reminder] No active order was found for Robot " << robotID << "." << endl;
-                cout << string(40, '=') << endl;
-            }
-            
             break;
         }
- 
-        //Send robot to maintenance
-        case 3: {
-            int id; 
-            cout << "Enter Robot ID to send to maintenance: "; 
-            
-            while (!(cin >> id)) {
-                cin.clear();
-                cin.ignore(1000000, '\n');
-                cout << "[ERROR] Invalid input. Please enter a valid Robot ID: ";
-            }
-            robotQueue.setMaintenance(id);
-            
+
+        case 6:
+            robotQueue.displayAll();
             break;
-        }
-        
-        //Restore robot from maintenance
-        case 4: {
-            int id; 
-            cout << "Enter Robot ID to restore: "; 
-            
-            while (!(cin >> id)) {
-                cin.clear();
-                cin.ignore(1000000, '\n');
-                cout << "[ERROR] Invalid input. Please enter a valid Robot ID: ";
-            }
-            robotQueue.restoreRobot(id);
-            
-            break;
-        }
- 
-        //Display all robot statuses
-        case 5:  
-            robotQueue.displayAll();          
-            break;
-        
-        //Display available robots
-        case 6:  
-            robotQueue.displayAvailable();    
-            break;
- 
-        //Display pending orders
-        case 8:  
-            waitingQueue.display();    
-            break;
-        
-        //Display processing orders
-        case 9:  
-            processingQueue.display(); 
-            break;
- 
-        //Display completed orders
-        case 10: 
-            completedQueue.display();  
-            break;
-        
-        //Exit program
+
         case 7:
-            cout << "Goodbye! Exiting Task 2." << endl << endl;
+            robotQueue.displayAvailable();
             break;
-        
-        //Invalid menu choice
+
+        case 8:
+            cout << "Goodbye! Exiting Task 2." << endl;
+            break;
+
         default:
-            cout << "[ERROR] Invalid choice. Please enter a number between 1 and 11." << endl;
+            cout << "\n[ERROR] Invalid choice. Please enter a number between 1 and 8." << endl;
         }
     } 
     
     //Repeat until user exits
-    while (choice != 7);
+    while (choice != 8);
 }
  

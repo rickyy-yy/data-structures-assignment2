@@ -96,6 +96,7 @@ void loadWaitingQueue(){
         string shelfNumberString;
         string zoneString;
         string packingStationString;
+        string robotIDString;
 
         stringstream stringStream(line);
 
@@ -104,6 +105,7 @@ void loadWaitingQueue(){
         getline(stringStream, shelfNumberString, ',');
         getline(stringStream, zoneString, ',');
         getline(stringStream, packingStationString, ',');
+        getline(stringStream, robotIDString, ',');
 
         orderID = stoi(orderIDString);
         itemID = stoi(itemIDString);
@@ -117,6 +119,7 @@ void loadWaitingQueue(){
         order->shelfNumber = shelfNumber;
         order->zone = zone;
         order->packingStation = packingStation;
+        order->robotID = -1;
 
         waitingQueue.loading = true;
         waitingQueue.enqueue(order);
