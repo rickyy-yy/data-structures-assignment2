@@ -1,5 +1,4 @@
 #include "Task2.hpp"
-#include "Task3.hpp"
 #include <iostream>
 #include <limits>
  
@@ -130,14 +129,7 @@ void runTask2() {
                 cout << "[ERROR] Invalid input. Please enter a valid Robot ID: ";
             }
             
-            //Complete robot task and launch navigation module
-            if (robotQueue.completeTask(robotID)) {
-                cout << "\n" << string(40, '=') << endl;
-                cout << "[Task 3] Robot " << robotID << " completed its task." << endl;
-                cout << "[Task 3] Launching navigation module for return journey..." << endl;
-                cout << string(40, '=') << endl;
-                navigateRobot();
-            }
+            robotQueue.completeTask(robotID);
             break;
         }
 
