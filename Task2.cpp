@@ -8,6 +8,7 @@ using namespace std;
 //Function declarations
 void loadItems();
 void loadWaitingQueue();
+void loadProcessingQueue();
 void loadCompletedQueue();
 int getFileLength(string filepath);
 

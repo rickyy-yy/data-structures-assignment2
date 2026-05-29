@@ -1,4 +1,5 @@
 #include "Task1.hpp"
+#include "Task2.hpp"
 
 int nextOrderID = 1;
 ItemArray itemArray;
@@ -24,6 +25,35 @@ int getFileLength(string filepath){
         count++;
     }
 
+    return count;
+}
+
+int getAvailableRobots(){
+    ifstream thisFile(ROBOTS_FILE);
+
+    if(!thisFile.is_open()){
+        cout << HEADER << endl;
+        cout << "File can't be open!" << endl;
+        cout << HEADER << endl;
+        return 0;
+    }
+
+    string line;
+    int count = 0;
+    getline(thisFile, line);
+    while(getline(thisFile, line)){
+        string status;
+        string robotIDString;
+
+        stringstream stringStream(line);
+
+        getline(stringStream, robotIDString, ',');
+        getline(stringStream, status, ',');
+
+        if(status == "Available"){
+            count++;
+        }
+    }
     return count;
 }
 
@@ -96,7 +126,6 @@ void loadWaitingQueue(){
         string shelfNumberString;
         string zoneString;
         string packingStationString;
-        string robotIDString;
 
         stringstream stringStream(line);
 
@@ -105,7 +134,6 @@ void loadWaitingQueue(){
         getline(stringStream, shelfNumberString, ',');
         getline(stringStream, zoneString, ',');
         getline(stringStream, packingStationString, ',');
-        getline(stringStream, robotIDString, ',');
 
         orderID = stoi(orderIDString);
         itemID = stoi(itemIDString);
@@ -129,6 +157,67 @@ void loadWaitingQueue(){
     }
     waitingQueue.loading = false;
     waitingQueueFile.close();
+}
+
+void loadProcessingQueue(){
+    ifstream processingQueueFile(PROCESSING_QUEUE_FILE);
+
+    if(!processingQueueFile.is_open()){
+        cout << HEADER << endl;
+        cout << "Processing queue file can't be open!" << endl;
+        cout << HEADER << endl;
+        return;
+    }
+
+    string line;
+    getline(processingQueueFile, line);
+    while(getline(processingQueueFile, line)){
+        int orderID;
+        int itemID;
+        int shelfNumber;
+        char zone;
+        char packingStation;
+        int robotID;
+
+        string orderIDString;
+        string itemIDString;
+        string shelfNumberString;
+        string zoneString;
+        string packingStationString;
+        string robotIDString;
+
+        stringstream stringStream(line);
+
+        getline(stringStream, orderIDString, ',');
+        getline(stringStream, itemIDString, ',');
+        getline(stringStream, shelfNumberString, ',');
+        getline(stringStream, zoneString, ',');
+        getline(stringStream, packingStationString, ',');
+        getline(stringStream, robotIDString, ',');
+
+        orderID = stoi(orderIDString);
+        itemID = stoi(itemIDString);
+        zone = zoneString[0];
+        shelfNumber = stoi(shelfNumberString);
+        packingStation = packingStationString[0];
+        robotID = stoi(robotIDString);
+
+        Order* order = new Order();
+        order->orderID = orderID;
+        order->itemID = itemID;
+        order->shelfNumber = shelfNumber;
+        order->zone = zone;
+        order->packingStation = packingStation;
+        order->robotID = robotID;
+
+        processingQueue.loading = true;
+        processingQueue.enqueue(order, robotID);
+        if(orderID >= nextOrderID){
+            nextOrderID = orderID + 1;
+        }
+    }
+    processingQueue.loading = false;
+    processingQueueFile.close();
 }
 
 void loadCompletedQueue(){
@@ -246,9 +335,7 @@ Order* createOrder(){
         }
     }
 
-    // CHANGE LATER
     thisRobotID = -1;
-    // CHANGE LATER
     
     Order* order = new Order(nextOrderID, thisItemID, thisRobotID, thisShelfNumber, thisPackingStation, thisZone);
     nextOrderID++;
@@ -257,9 +344,9 @@ Order* createOrder(){
 
 void runTask1(){
     int choice = 0;
-    
-    if(processingQueue.capacity == 0){
-        int robot_count = getFileLength(ROBOTS_FILE);
+    int robot_count = getFileLength(ROBOTS_FILE);
+
+    if(processingQueue.capacity != robot_count){
         processingQueue.resize(robot_count);
     }
     
@@ -267,12 +354,28 @@ void runTask1(){
     itemArray.init(item_count);
 
     waitingQueue.clear();
+    processingQueue.clear();
     completedQueue.clear();
+    robotQueue.clear();
 
     loadWaitingQueue();
+    loadProcessingQueue();
     loadCompletedQueue();
-
     loadItems();
+    robotQueue.loadFromCSV(ROBOTS_FILE);
+
+    for(int i = 0; i < processingQueue.size; i++){
+        int processingIndex = (processingQueue.front + i) % processingQueue.capacity;
+        Order* temp = processingQueue.queue[processingIndex];
+        for(int j = 0; j < robotQueue.count; j++){
+            int robotIndex = (robotQueue.front + j) % robotQueue.cap;
+            if(robotQueue.slots[robotIndex].robotID == temp->robotID){
+                robotQueue.slots[robotIndex].status = "Busy";
+                robotQueue.slots[robotIndex].assignedOrderId = temp->orderID;
+                break;
+            }
+        }
+    }
 
     cout << HEADER << endl;
     cout << "Task 1: Order Management" << endl;
@@ -315,7 +418,7 @@ void runTask1(){
                 waitingQueue.enqueue(order);
                 break;
             }
-            case 2: 
+            case 2: {
                 // Process Order (Enqueue + Dequeue)
                 if(waitingQueue.isEmpty()){
                     cout << HEADER << endl;
@@ -329,8 +432,44 @@ void runTask1(){
                     cout << HEADER << endl;
                     break;
                 }
-                processingQueue.enqueue(waitingQueue.dequeue());
+
+                // Find an available robot (round-robin)
+                int assignedSlot = -1;
+                int index;
+                for(int attempt = 0; attempt < robotQueue.count; attempt++){
+                    index = (robotQueue.front + robotQueue.currentTurn) % robotQueue.cap;
+                    
+                    //Move turn pointer
+                    robotQueue.currentTurn = (robotQueue.currentTurn + 1) % robotQueue.count;
+                    
+                    //Chk if robot is available
+                    if(robotQueue.slots[index].status == "Available"){
+                        assignedSlot = index;
+                        break;
+                    }
+                }
+
+                if(assignedSlot == -1){
+                    cout << HEADER << endl;
+                    cout << "There are no available robots, please wait." << endl;
+                    cout << HEADER << endl;
+                    break;
+                }
+
+                Order* processedOrder = waitingQueue.dequeue();
+
+                // Assign robot to order
+                robotQueue.slots[assignedSlot].status = "Busy";
+                robotQueue.slots[assignedSlot].assignedOrderId = processedOrder->orderID;
+                processedOrder->robotID = robotQueue.slots[assignedSlot].robotID;
+                processedOrder->status = "Processing";
+
+                //Save updated robot data
+                robotQueue.saveToCSV(ROBOTS_FILE);
+
+                processingQueue.enqueue(processedOrder, robotQueue.slots[assignedSlot].robotID);
                 break;
+            }
             case 3: {
                 // Complete Order (Enqueue + Dequeue)
                 if(processingQueue.isEmpty()){
@@ -341,6 +480,17 @@ void runTask1(){
                 }
                 Order* doneOrder = processingQueue.dequeue();
                 completedQueue.enqueue(doneOrder);
+
+                for(int i = 0; i < robotQueue.count; i++){
+                    int index = (robotQueue.front + i) % robotQueue.cap;
+                    if(robotQueue.slots[index].robotID == doneOrder->robotID){
+                        robotQueue.slots[index].status = "Available";
+                        robotQueue.slots[index].assignedOrderId = -1;
+                        robotQueue.slots[index].totalTaskDone++;
+                        break;
+                    }
+                }
+                robotQueue.saveToCSV(ROBOTS_FILE);
                 break;
             }
             case 4:

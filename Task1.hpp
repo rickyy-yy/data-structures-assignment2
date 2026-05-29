@@ -12,6 +12,7 @@ using namespace std;
 const string ITEMS_FILE = "items.csv";
 const string ROBOTS_FILE = "robots.csv";
 const string WAITING_QUEUE_FILE = "waiting_queue.csv";
+const string PROCESSING_QUEUE_FILE = "processing_queue.csv";
 const string COMPLETED_QUEUE_FILE = "completed_queue.csv";
 const string HEADER = string(80, '=');
 
@@ -379,6 +380,7 @@ struct ProcessingQueue{
     int rear;
     int capacity;
     int size;
+    bool loading;
     
     ProcessingQueue(){
         capacity = 0;
@@ -386,6 +388,7 @@ struct ProcessingQueue{
         front = 0;
         rear = -1;
         size = 0;
+        loading = false;
     }
 
     ~ProcessingQueue(){
@@ -443,7 +446,7 @@ struct ProcessingQueue{
         
     }
 
-    void enqueue(Order* order){
+    void enqueue(Order* order, int robotID){
         if(size >= capacity){
             cout << "Queue full!" << endl;
             return;
@@ -453,8 +456,18 @@ struct ProcessingQueue{
         size++;
         order->status = "Processing";
 
+        if(order->robotID <= 0){
+            order->robotID = robotID;
+        }
+
+        if(loading){
+            return;
+        }
+
+        updateFile();
+
         cout << HEADER << endl;
-        cout << "Order #" << order->orderID << " is now processing." << endl;
+        cout << "Order #" << order->orderID << " is now assigned to Robot #" << order->robotID << endl;
         cout << HEADER << endl;
 
         return;
@@ -471,6 +484,8 @@ struct ProcessingQueue{
         Order* o = queue[front];
         front = (front + 1) % capacity;
         size--;
+
+        updateFile();
 
         return o;
     }
@@ -521,12 +536,46 @@ struct ProcessingQueue{
         }
     }
 
+    void updateFile(){
+        ofstream processingQueueFile(PROCESSING_QUEUE_FILE);
+
+        if(!processingQueueFile.is_open()){
+            cout << HEADER << endl;
+            cout << "Processing queue file can't be open!" << endl;
+            cout << HEADER << endl;
+            return;
+        }
+
+        if(!isEmpty()){
+            processingQueueFile << "orderID,itemID,shelfNumber,zone,packingStation,robotID" << "\n";
+            for(int i = 0; i < size; i++){
+                int index = (front + i) % capacity;
+                processingQueueFile << queue[index]->orderID << "," << queue[index]->itemID << "," << queue[index]->shelfNumber << "," << queue[index]->zone << "," << queue[index]->packingStation << "," << queue[index]->robotID << "\n";
+            }
+        }
+        else{
+            processingQueueFile << "orderID,itemID,shelfNumber,zone,packingStation,robotID" << "\n";
+        }
+        processingQueueFile.close();
+    }
+
     bool isEmpty(){
         return size == 0;
     }
 
     bool isFull(){
         return size == capacity;
+    }
+
+    void clear(){
+        for(int i = 0; i< size; i++){
+            int index = (front + i) % capacity;
+            delete queue[index];
+        }
+
+        front = 0;
+        rear = -1;
+        size = 0;
     }
 };
 

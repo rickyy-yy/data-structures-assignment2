@@ -151,7 +151,7 @@ struct CircularQueue{
         order->status = "Processing";
 
         // Place order into processingQueue
-        processingQueue.enqueue(order);
+        processingQueue.enqueue(order, slots[assignedSlot].robotID);
 
         cout << endl;
         cout << string(40,'=') << endl;
@@ -163,7 +163,6 @@ struct CircularQueue{
         saveToCSV(ROBOTS_FILE);
     }
 
- 
     // Mark a robot's task as completed and set it back to Available
     bool completeTask(int robotID) {
         int robotSlot = -1;
@@ -213,7 +212,7 @@ struct CircularQueue{
 
         // Re-insert the orders that belong to other robots
         for(int j = 0; j < kept; j++)
-            processingQueue.enqueue(temp[j]);
+            processingQueue.enqueue(temp[j], temp[j]->robotID);
 
         //Order not found
         if(doneOrder == nullptr){
@@ -536,6 +535,13 @@ struct CircularQueue{
         
         saveToCSV(ROBOTS_FILE);  
     }
+
+    void clear(){
+        front = 0;
+        rear = -1;
+        count = 0;
+        currentTurn = 0;
+    }
 };
 
 //External declaration of robot queue
@@ -543,4 +549,3 @@ extern CircularQueue robotQueue;
 
 //Function declaration
 void runTask2();
-
