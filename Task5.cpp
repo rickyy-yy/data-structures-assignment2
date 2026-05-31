@@ -10,6 +10,8 @@
 
 #include "Task5.hpp"
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <limits>
 
@@ -219,27 +221,33 @@ namespace Task5 {
         cout << "WAREHOUSE MAP (Visual)" << endl;
         cout << string(40, '=') << endl;
 
-        // Print every Zone, then its Aisles, then their Shelves
+        // Print every Zone, then the Stations, Aisles and Shelves
+        // directly connected to it.
         for (int i = 0; i < locationCount; i++) {
             if (locations[i].type != "Zone") continue;
             cout << "[Zone] " << locations[i].name << endl;
 
-            // walk neighbors -> find Aisles connected to this zone
             Node* n = locations[i].neighbors.head;
             while (n != nullptr) {
                 int idx = findIndex(n->data);
-                if (idx != -1 && locations[idx].type == "Aisle") {
-                    cout << " |-- [Aisle] " << locations[idx].name << endl;
-
-                    // walk that aisle's neighbors -> find Shelves
-                    Node* sn = locations[idx].neighbors.head;
-                    while (sn != nullptr) {
-                        int sidx = findIndex(sn->data);
-                        if (sidx != -1 && locations[sidx].type == "Shelf") {
-                            cout << "   |       |-- [Shelf] "
-                                 << locations[sidx].name << endl;
+                if (idx != -1) {
+                    const string& t = locations[idx].type;
+                    if (t == "Station") {
+                        cout << " |-- [Station] " << locations[idx].name << endl;
+                    } else if (t == "Shelf") {
+                        cout << " |-- [Shelf]   " << locations[idx].name << endl;
+                    } else if (t == "Aisle") {
+                        cout << " |-- [Aisle]   " << locations[idx].name << endl;
+                        // walk that aisle's neighbors -> find Shelves
+                        Node* sn = locations[idx].neighbors.head;
+                        while (sn != nullptr) {
+                            int sidx = findIndex(sn->data);
+                            if (sidx != -1 && locations[sidx].type == "Shelf") {
+                                cout << "   |       |-- [Shelf] "
+                                     << locations[sidx].name << endl;
+                            }
+                            sn = sn->next;
                         }
-                        sn = sn->next;
                     }
                 }
                 n = n->next;
@@ -251,13 +259,6 @@ namespace Task5 {
 
     // ----------------------------------------------------
     // BFS - Shortest path between two locations
-    //
-    // ALGORITHM:
-    //   1. Start at startId, mark it visited.
-    //   2. Use a Queue (FIFO) to explore neighbors layer by layer.
-    //   3. For each visited node, remember its parent.
-    //   4. When endId is dequeued, walk parents backwards
-    //      and use a Stack to reverse the order.
     // ----------------------------------------------------
     void Warehouse::findPath(int startId, int endId) {
         cout << endl;
@@ -285,7 +286,6 @@ namespace Task5 {
     }
 
     // ----------------------------------------------------
-    // Integration API for Task 3:
     // Returns a Stack of location IDs (top = start, bottom = end).
     // The robot pops from the stack to follow the path step by step.
     // ----------------------------------------------------
@@ -341,9 +341,6 @@ namespace Task5 {
 
     // ----------------------------------------------------
     // DFS - Traverse every reachable warehouse section
-    //
-    // WHY STACK: LIFO causes the search to go deep first
-    //            (down a branch) before backtracking.
     // ----------------------------------------------------
     void Warehouse::traverseAll(int startId) {
         cout << endl;
@@ -387,45 +384,61 @@ namespace Task5 {
     }
 
     // ============================================================
-    // Helper: build the sample warehouse used by the demo
+    // ID SCHEME (so zones, shelves and stations never collide)
+    //   Zone  letter X  -> id = 100 + (X - 'A')   [A=100 ... K=110]
+    //   Shelf number N  -> id = N                 [1 ... 15]
+    //   Station letter X-> id = 200 + (X - 'A')   [A=200 ... L=211]
     // ============================================================
-    static void buildSampleWarehouse(Warehouse& wh) {
-        // ---- Zones ----
-        wh.addLocation(1, "Zone-A (Receiving)", "Zone");
-        wh.addLocation(2, "Zone-B (Storage)",   "Zone");
-        wh.addLocation(3, "Zone-C (Shipping)",  "Zone");
+    static int zoneId(char z)    { return 100 + (z - 'A'); }   // A=100 ... K=110
+    static int stationId(char s) { return 200 + (s - 'A'); }   // A=200 ... L=211
+    // (shelves just use their own number 1-15 as the ID)
 
-        // ---- Aisles ----
-        wh.addLocation(10, "Aisle-A1", "Aisle");
-        wh.addLocation(11, "Aisle-A2", "Aisle");
-        wh.addLocation(20, "Aisle-B1", "Aisle");
-        wh.addLocation(21, "Aisle-B2", "Aisle");
-        wh.addLocation(30, "Aisle-C1", "Aisle");
+    // ============================================================
+    // Build the warehouse graph from the CSV files.
+    // ============================================================
+    void buildWarehouseFromCSV(Warehouse& wh) {
+        string line;
 
-        // ---- Shelves ----
-        wh.addLocation(101, "Shelf-A1-S1", "Shelf");
-        wh.addLocation(102, "Shelf-A1-S2", "Shelf");
-        wh.addLocation(201, "Shelf-B1-S1", "Shelf");
-        wh.addLocation(202, "Shelf-B2-S1", "Shelf");
-        wh.addLocation(301, "Shelf-C1-S1", "Shelf");
+        // ---- 1) ZONES (one letter per line) ----
+        ifstream zoneFile("zones.csv");
+        getline(zoneFile, line);                 // skip header
+        int prevZone = -1;
+        while (getline(zoneFile, line)) {
+            if (line.empty()) continue;
+            char z = line[0];
+            wh.addLocation(zoneId(z), string("Zone-") + z, "Zone");
+            if (prevZone != -1) wh.connect(prevZone, zoneId(z));  // chain A-B-C-...
+            prevZone = zoneId(z);
+        }
 
-        // ---- Connections between zones ----
-        wh.connect(1, 2);
-        wh.connect(2, 3);
+        // ---- 2) SHELVES (items.csv: id,name,zone,shelf) ----
+        ifstream itemFile("items.csv");
+        getline(itemFile, line);                 // skip header
+        while (getline(itemFile, line)) {
+            if (line.empty()) continue;
+            stringstream ss(line);
+            string id, name, zoneStr, shelfStr;
+            getline(ss, id,    ',');
+            getline(ss, name,  ',');
+            getline(ss, zoneStr, ',');
+            getline(ss, shelfStr, ',');
 
-        // ---- Connections zone -> aisle ----
-        wh.connect(1, 10);
-        wh.connect(1, 11);
-        wh.connect(2, 20);
-        wh.connect(2, 21);
-        wh.connect(3, 30);
+            char z  = zoneStr[0];
+            int  sn = stoi(shelfStr);
+            wh.addLocation(sn, "Shelf-" + shelfStr + " (Zone-" + z + ")", "Shelf");
+            wh.connect(zoneId(z), sn);           // link shelf to its zone
+        }
 
-        // ---- Connections aisle -> shelf ----
-        wh.connect(10, 101);
-        wh.connect(10, 102);
-        wh.connect(20, 201);
-        wh.connect(21, 202);
-        wh.connect(30, 301);
+        // ---- 3) PACKING STATIONS (one letter per line) ----
+        ifstream stationFile("stations.csv");
+        getline(stationFile, line);              // skip header
+        while (getline(stationFile, line)) {
+            if (line.empty()) continue;
+            char s = line[0];
+            wh.addLocation(stationId(s), string("PackingStation-") + s, "Station");
+            if (wh.findIndex(zoneId(s)) != -1)   // connect only if that zone exists
+                wh.connect(stationId(s), zoneId(s));
+        }
     }
 
     // ============================================================
@@ -446,7 +459,7 @@ namespace Task5 {
     // ============================================================
     void runTask5() {
         Warehouse wh;
-        buildSampleWarehouse(wh);
+        buildWarehouseFromCSV(wh);
 
         int choice = 0;
         do {
@@ -465,7 +478,7 @@ namespace Task5 {
             if (!readInt(choice)) {
                 cout << endl;
                 cout << string(40, '=') << endl;
-                cout << "! Invalid input. Please enter 1-6." << endl;
+                cout << "Invalid input. Please enter 1-6." << endl;
                 cout << string(40, '=') << endl;
                 continue;
             }
@@ -500,10 +513,10 @@ namespace Task5 {
                 case 5:
                     wh.displayVisualMap();
                     wh.displayLayout();
-                    wh.findPath(101, 301);   // Shelf in A -> Shelf in C
-                    wh.findPath(1, 202);     // Receiving zone -> Shelf in B
-                    wh.findPath(102, 201);   // Shelf -> Shelf
-                    wh.traverseAll(1);
+                    wh.findPath(200, 8);     // PackingStation-A -> Shelf-8 (Zone C)
+                    wh.findPath(100, 12);    // Zone-A -> Shelf-12 (Zone D)
+                    wh.findPath(1, 15);      // Shelf-1 (Zone A) -> Shelf-15 (Zone E)
+                    wh.traverseAll(200);     // DFS from PackingStation-A
                     break;
 
                 case 6:
@@ -513,7 +526,7 @@ namespace Task5 {
                 default:
                     cout << endl;
                     cout << string(40, '=') << endl;
-                    cout << "! Invalid choice. Please enter 1-6." << endl;
+                    cout << "Invalid choice. Please enter 1-6." << endl;
                     cout << string(40, '=') << endl;
             }
         } while (choice != 6);

@@ -117,6 +117,15 @@ namespace Task5 {
         std::string getLocationName(int id) const;
     };
 
+    // ============================================================
+    // CSV LOADER
+    // Builds the warehouse graph from the assignment CSV files
+    // (zones.csv, items.csv, stations.csv) instead of hardcoded data.
+    // Declared here (not static) so Task 3 can build the same map
+    // for auto-navigation.
+    // ============================================================
+    void buildWarehouseFromCSV(Warehouse& wh);
+
     // Entry point called from main.cpp
     void runTask5();
 
