@@ -707,35 +707,6 @@ int getFileLength(string filepath){
     return count;
 }
 
-int getAvailableRobots(){
-    ifstream thisFile(ROBOTS_FILE);
-
-    if(!thisFile.is_open()){
-        cout << HEADER << endl;
-        cout << "File can't be open!" << endl;
-        cout << HEADER << endl;
-        return 0;
-    }
-
-    string line;
-    int count = 0;
-    getline(thisFile, line);
-    while(getline(thisFile, line)){
-        string status;
-        string robotIDString;
-
-        stringstream stringStream(line);
-
-        getline(stringStream, robotIDString, ',');
-        getline(stringStream, status, ',');
-
-        if(status == "Available"){
-            count++;
-        }
-    }
-    return count;
-}
-
 void loadItems(){
     ifstream itemFile(ITEMS_FILE);
 

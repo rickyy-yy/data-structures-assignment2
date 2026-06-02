@@ -340,8 +340,6 @@ void navigateRobot() {
     } while (choice != 0);
 }
 
-int main() {
+void runTask3() {
     navigateRobot();
-
-    return 0;
 }

@@ -39,9 +39,24 @@ void runTask2() {
         //Load all required data
         loadItems();
         loadWaitingQueue();
+        loadProcessingQueue();
         loadCompletedQueue();
     }
- 
+    
+    // Sync robot statuses with the processing queue
+    for (int i = 0; i < processingQueue.size; i++) {
+        int processingIndex = (processingQueue.front + i) % processingQueue.capacity;
+        Order* temp = processingQueue.queue[processingIndex];
+        for (int j = 0; j < robotQueue.count; j++) {
+            int robotIndex = (robotQueue.front + j) % robotQueue.cap;
+            if (robotQueue.slots[robotIndex].robotID == temp->robotID) {
+                robotQueue.slots[robotIndex].status = "Busy";
+                robotQueue.slots[robotIndex].assignedOrderId = temp->orderID;
+                break;
+            }
+        }
+    }
+
     int choice = 0;
     
     do {

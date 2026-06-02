@@ -476,6 +476,8 @@ struct CircularQueue{
         slots[rear] = r;
         
         count++;
+
+        processingQueue.resize(count);
         
         cout << "\n[OK] Robot " << r.robotID << " added and set to Available." << endl;
         
