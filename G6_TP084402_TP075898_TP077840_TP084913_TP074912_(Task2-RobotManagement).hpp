@@ -417,8 +417,6 @@ struct CircularQueue{
         }
         
         file.close();
-        
-        cout << "\n[OK] Loaded " << loaded << " robot(s) from " << filename << "." << endl;
     }
 
     //Save robots data into CSV file

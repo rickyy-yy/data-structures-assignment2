@@ -1029,9 +1029,10 @@ void runTask1(){
 
     cout << HEADER << endl;
     cout << "Task 1: Order Management" << endl;
-    cout << HEADER << endl;
     while(choice != 7){
+        cout << HEADER << endl;
         cout << "Task Selection:" << endl;
+        cout << HEADER << endl;
         cout << "1. Record a new order" << endl;
         cout << "2. Process an order" << endl;
         cout << "3. Complete an order" << endl;
