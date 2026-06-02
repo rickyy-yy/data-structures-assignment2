@@ -211,7 +211,7 @@ public:
 //Mark Item picked up
     void markTaskComplete() {
         taskComplete = true;
-        navLog.addEntry("Item picked up � task marked complete");
+        navLog.addEntry("Item picked up - task marked complete");
         cout << "  [Task Complete] Item picked up." << endl;
     }
 
@@ -340,8 +340,8 @@ void navigateRobot() {
     } while (choice != 0);
 }
 
-void runTask3() {
+int main() {
     navigateRobot();
 
-    return;
+    return 0;
 }
