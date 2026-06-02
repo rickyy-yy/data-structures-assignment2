@@ -9,7 +9,7 @@
 using namespace std;
 
 int main() {
-    int choice;
+    int choice = 0;
 
     do {
         cout << string(40, '=') << endl;
