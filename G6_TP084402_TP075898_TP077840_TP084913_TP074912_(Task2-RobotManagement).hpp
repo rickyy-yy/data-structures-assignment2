@@ -69,12 +69,13 @@ struct CircularQueue{
         //Increase robot count
         count ++;
 
-        cout << "\n Robot " << r.robotID << "\n added to queue." << endl;
+        cout << "\n Robot " << r.robotID << " added to queue." << endl;
     }
 
     //Remove robot from the front of the queue
     Robot dequeue(){
         Robot r;
+        r.robotID = -1;
         
         //Prevent removal if queue is empty
         if (IsEmpty()){
@@ -192,8 +193,9 @@ struct CircularQueue{
         Order* doneOrder = nullptr;
         
          //temp array to store remaining orders
-        Order* temp[50]  = {};
-        int    kept      = 0;
+        int tempSize = processingQueue.capacity > 0 ? processingQueue.capacity : 50;
+        Order** temp = new Order*[tempSize]();
+        int kept = 0;
 
        //Remove all orders from processing queue
         while(!processingQueue.isEmpty()){
@@ -214,6 +216,8 @@ struct CircularQueue{
         for(int j = 0; j < kept; j++)
             processingQueue.enqueue(temp[j], temp[j]->robotID);
 
+        delete[] temp;
+        
         //Order not found
         if(doneOrder == nullptr){
             cout << "\n[ERROR] Could not find order assigned to Robot " << robotID << ".\n";

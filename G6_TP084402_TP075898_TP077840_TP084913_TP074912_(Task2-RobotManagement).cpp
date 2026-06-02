@@ -28,7 +28,7 @@ void runTask2() {
     }
 
     // Load item list and queues if they are still empty
-    if (waitingQueue.size == 0 && completedQueue.size == 0) {
+    if (waitingQueue.size == 0 && completedQueue.size == 0 && processingQueue.size == 0) {
         
         //Get total number of items from file
         int item_count = getFileLength(ITEMS_FILE);
