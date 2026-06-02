@@ -400,7 +400,7 @@ namespace Task5 {
         string line;
 
         // ---- 1) ZONES (one letter per line) ----
-        ifstream zoneFile("zones.csv");
+        ifstream zoneFile("G6_TP084402_TP075898_TP077840_TP084913_TP074912_zones.csv");
         getline(zoneFile, line);                 // skip header
         int prevZone = -1;
         while (getline(zoneFile, line)) {
@@ -412,7 +412,7 @@ namespace Task5 {
         }
 
         // ---- 2) SHELVES (items.csv: id,name,zone,shelf) ----
-        ifstream itemFile("items.csv");
+        ifstream itemFile("G6_TP084402_TP075898_TP077840_TP084913_TP074912_items.csv");
         getline(itemFile, line);                 // skip header
         while (getline(itemFile, line)) {
             if (line.empty()) continue;
@@ -430,7 +430,7 @@ namespace Task5 {
         }
 
         // ---- 3) PACKING STATIONS (one letter per line) ----
-        ifstream stationFile("stations.csv");
+        ifstream stationFile("G6_TP084402_TP075898_TP077840_TP084913_TP074912_stations.csv");
         getline(stationFile, line);              // skip header
         while (getline(stationFile, line)) {
             if (line.empty()) continue;
